@@ -360,22 +360,6 @@
       }
     }
 
-    /* ── PHONE: keep original single-column feel ────────────────── */
-    @media (max-width:599px) {
-      #app {
-        width: 100%;
-        margin: 0
-      }
-
-      #hero-banner {
-        height: 120px;
-      }
-
-      html,
-      body {
-        overflow: hidden
-      }
-    }
 
     /* ── HERO FOOD IMAGE ──────────────────────────────────────── */
     #hero-banner {
@@ -407,6 +391,23 @@
           rgba(9, 9, 15, .8) 85%,
           var(--bg) 100%);
       pointer-events: none;
+    }
+
+    /* ── PHONE OVERRIDES ───────────────────────── */
+    @media (max-width:599px) {
+      #app {
+        width: 100%;
+        margin: 0
+      }
+
+      #hero-banner {
+        height: 120px;
+      }
+
+      html,
+      body {
+        overflow: hidden;
+      }
     }
 
     /* City tagline over the photo */
@@ -451,24 +452,25 @@
     #map-section {
       flex: 1;
       min-height: 220px;
-      transition: height .38s cubic-bezier(.4, 0, .2, 1), opacity .3s;
       overflow: hidden;
       position: relative;
       margin: 8px 12px 0;
       border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .4)
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+      display: flex;
+      flex-direction: column;
     }
 
     #map-section.hidden {
-      height: 0 !important;
-      min-height: 0 !important;
-      opacity: 0;
-      pointer-events: none;
-      margin: 0
+      display: none !important;
     }
 
-    #map,
-    /* View toggle bar — single unified rule (duplicate removed) */
+    #map {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
     #view-toggle {
       display: flex;
       gap: 7px;
@@ -1265,7 +1267,8 @@
     #list-view {
       display: flex;
       flex-direction: column;
-      overflow: hidden
+      overflow: hidden;
+      flex: 1;
     }
 
     #list-head {
@@ -1409,9 +1412,9 @@
     #detail-view {
       display: none;
       flex-direction: column;
+      height: 100%;
+      flex: 1;
       overflow: hidden;
-      position: absolute;
-      inset: 0;
       background: var(--bg);
       border-radius: 24px 24px 0 0
     }
@@ -3691,6 +3694,7 @@
     // ── DATA — Real restaurants in Douala, Cameroon ──────────────────────────
     const DATA = [
       {
+        id: 1, name: "La Falaise", cuisine: "Cameroonian · Continental", type: "Restaurant",
         lat: 4.0450, lng: 9.6890, address: "Rue Kitchener, Bonanjo, Douala",
         neighborhood: "Bonanjo", phone: "+237 233 42 45 55",
         whatsapp: "+237233424555",
@@ -3714,6 +3718,7 @@
         ]
       },
       {
+        id: 2, name: "Le Biniou", cuisine: "Cameroonian · Grillades", type: "Maquis · Bar",
         lat: 4.0650, lng: 9.7150, address: "Akwa Nord, Douala",
         neighborhood: "Akwa", phone: "+237 699 23 45 67",
         whatsapp: "+237699234567",
@@ -3737,6 +3742,7 @@
         ]
       },
       {
+        id: 3, name: "Wouri Seafood", cuisine: "Fruits de Mer · Cameroonian", type: "Restaurant",
         lat: 4.0430, lng: 9.6970, address: "Bali Beach Road, Bali, Douala",
         neighborhood: "Bali", phone: "+237 677 88 90 12",
         whatsapp: "+237677889012",
@@ -3760,6 +3766,7 @@
         ]
       },
       {
+        id: 4, name: "Saveur du Terroir", cuisine: "Cameroonian · Traditionnel", type: "Restaurant populaire",
         lat: 4.0720, lng: 9.7180, address: "Marché Central, Deido, Douala",
         neighborhood: "Deido", phone: "+237 654 32 10 98",
         whatsapp: "+237654321098",
@@ -3783,6 +3790,7 @@
         ]
       },
       {
+        id: 5, name: "Chez Maman Ngo", cuisine: "Street Food · Cameroonian", type: "Restaurant de quartier",
         lat: 4.0320, lng: 9.7020, address: "Carrefour Elf, Bonapriso, Douala",
         neighborhood: "Bonapriso", phone: "+237 677 11 22 33",
         whatsapp: "+237677112233",
@@ -3806,6 +3814,7 @@
         ]
       },
       {
+        id: 6, name: "Restaurant du Fleuve", cuisine: "Continental · Cameroonian", type: "Restaurant-Hôtel",
         lat: 4.0550, lng: 9.7000, address: "Boulevard de la Liberté, Akwa, Douala",
         neighborhood: "Akwa", phone: "+237 233 42 60 00",
         whatsapp: "+237233426000",
@@ -3828,6 +3837,7 @@
         ]
       },
       {
+        id: 7, name: "Fast & Grill Akwa", cuisine: "Fast Food · Grillades", type: "Fast Food",
         lat: 4.0580, lng: 9.7100, address: "Rue Joffre, Akwa, Douala",
         neighborhood: "Akwa", phone: "+237 690 55 44 33",
         whatsapp: "+237690554433",
@@ -3851,6 +3861,7 @@
         ]
       },
       {
+        id: 8, name: "Le Libanais", cuisine: "Libanais · Méditerranéen", type: "Restaurant",
         lat: 4.0460, lng: 9.6920, address: "Rue du Commerce, Bonanjo, Douala",
         neighborhood: "Bonanjo", phone: "+237 233 43 21 00",
         whatsapp: "+237233432100",
