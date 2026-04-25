@@ -5476,7 +5476,7 @@ Règles:
       } else {
         if (!isWide) {
           mapSection.classList.add('hidden');
-          if (hero) hero.classList.remove('hidden'); // Keep image visible
+          if (hero) hero.classList.add('hidden'); // Hide image for max list space
         }
         sheet.classList.add('list-mode');
         btnList.classList.add('active');
