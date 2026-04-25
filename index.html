@@ -1,0 +1,5626 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FoodMap Douala — Découverte IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    /* ── THEMES ──────────────────────────────────────────────────── */
+    :root {
+      --bg: #09090F;
+      --s1: #111118;
+      --s2: #191921;
+      --border: #21212E;
+      --text: #EDEAE0;
+      --muted: #4E4E68;
+      --accent: #FF5533;
+      --ai: #A78BFA;
+      --ai2: #7C3AED;
+      --gold: #FFBE3D;
+      --green: #34D399;
+      --blue: #4A90FF;
+      --r: 16px;
+      --map-filter: brightness(.65) saturate(.35) hue-rotate(200deg);
+      --bar-bg: rgba(9, 9, 15, .94);
+      --ai-bar-bg: rgba(9, 9, 15, .96);
+    }
+
+    [data-theme="light"] {
+      --bg: #F5F3EE;
+      --s1: #FFFFFF;
+      --s2: #EDEAE4;
+      --border: #E0DDD6;
+      --text: #1A1814;
+      --muted: #8C8880;
+      --accent: #FF5533;
+      --ai: #7C3AED;
+      --ai2: #5B21B6;
+      --map-filter: brightness(1) saturate(.8);
+      --bar-bg: rgba(245, 243, 238, .96);
+      --ai-bar-bg: rgba(245, 243, 238, .98);
+    }
+
+    [data-theme="sunset"] {
+      --bg: #1A0D0A;
+      --s1: #221208;
+      --s2: #2E1810;
+      --border: #3D200E;
+      --text: #F5E6D8;
+      --muted: #7A5040;
+      --accent: #FF8C42;
+      --ai: #F4A261;
+      --ai2: #E76F51;
+      --map-filter: brightness(.6) saturate(.5) hue-rotate(20deg);
+      --bar-bg: rgba(26, 13, 10, .96);
+      --ai-bar-bg: rgba(26, 13, 10, .98);
+    }
+
+    [data-theme="forest"] {
+      --bg: #080F0A;
+      --s1: #0D1A0F;
+      --s2: #122214;
+      --border: #1A3020;
+      --text: #D4EDD8;
+      --muted: #3D6645;
+      --accent: #52B788;
+      --ai: #95D5B2;
+      --ai2: #2D6A4F;
+      --map-filter: brightness(.6) saturate(.6) hue-rotate(100deg);
+      --bar-bg: rgba(8, 15, 10, .96);
+      --ai-bar-bg: rgba(8, 15, 10, .98);
+    }
+
+    [data-theme="neon"] {
+      --bg: #050510;
+      --s1: #0A0A1E;
+      --s2: #0F0F28;
+      --border: #1A1A3E;
+      --text: #E8E8FF;
+      --muted: #4040A0;
+      --accent: #00F5D4;
+      --ai: #BF5AF2;
+      --ai2: #9B36D4;
+      --map-filter: brightness(.5) saturate(.3) hue-rotate(240deg);
+      --bar-bg: rgba(5, 5, 16, .96);
+      --ai-bar-bg: rgba(5, 5, 16, .98);
+    }
+
+    html,
+    body {
+      height: 100%;
+      height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+      transition: background .3s, color .3s
+    }
+
+    /* ── RESPONSIVE LAYOUT SYSTEM ───────────────────────────────
+   Mobile  < 600px   : phone — original single-column app
+   Tablet  600–1024px: split — map left, panel right
+   Desktop > 1024px  : wide split with sidebar navigation
+   TV      > 1600px  : extra-wide with larger type
+──────────────────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── TABLET & DESKTOP (600px+): proper top-bar in normal flow ── */
+    @media (min-width:600px) {
+
+      html,
+      body {
+        overflow: hidden
+      }
+
+      #app {
+        flex-direction: column;
+        max-width: 100%;
+        display: flex;
+        height: 100vh
+      }
+
+      /* Hero hidden on tablet/desktop */
+      #hero-banner {
+        display: none !important
+      }
+
+      /* Topbar in normal flow, not absolute, so it pushes content down */
+      #topbar {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        z-index: 30;
+        padding: 10px 20px 10px;
+        flex-shrink: 0;
+        background: var(--bar-bg);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      /* Prevent AI bar from expanding too wide */
+      #ai-bar,
+      #ai-result {
+        max-width: 680px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+
+      #topbar-spacer {
+        display: none !important
+      }
+
+      /* Controls bar directly below topbar in flow */
+      #controls-bar {
+        flex-shrink: 0;
+        background: var(--bar-bg) !important;
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        z-index: 20;
+        transition: opacity .25s, pointer-events .25s;
+      }
+
+      body.list-active #controls-bar {
+        opacity: 0;
+        pointer-events: none;
+        height: 0;
+        overflow: hidden;
+      }
+
+      /* Main area fills remaining height */
+      #main-area {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+        position: relative;
+        min-height: 0;
+      }
+
+      /* Map section fills all available space */
+      #map-section {
+        flex: 1 !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        position: relative;
+      }
+
+      #map {
+        height: 100% !important;
+        width: 100% !important
+      }
+
+      #view-toggle {
+        display: flex !important
+      }
+
+      /* SHEET: right panel, off-screen by default */
+      #sheet {
+        position: absolute !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        left: auto !important;
+        width: 380px !important;
+        height: 100% !important;
+        border-radius: 0 !important;
+        border-top: none !important;
+        border-left: 1.5px solid var(--border) !important;
+        display: flex !important;
+        flex-direction: column;
+        z-index: 600;
+        transform: translateX(110%) !important;
+        transition: transform .38s cubic-bezier(.4, 0, .2, 1);
+        max-height: none !important;
+      }
+
+      /* peek & half both show the sheet on tablet */
+      #sheet.peek {
+        transform: translateX(0) !important;
+      }
+
+      #sheet.half {
+        transform: translateX(0) !important;
+      }
+
+      #sheet.gone {
+        transform: translateX(110%) !important;
+      }
+
+      #sheet.list-mode {
+        transform: translateX(0) !important;
+      }
+
+      #drag-h {
+        display: none !important
+      }
+
+      #list-scroll {
+        padding-bottom: 90px;
+        min-height: 0
+      }
+
+      #add-view,
+      #saved-view,
+      #profile-view {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000 !important;
+      }
+
+      .sub-page {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1100 !important
+      }
+    }
+
+    /* ── DESKTOP WIDE (1024px+) ──────────────────────────────────── */
+    @media (min-width:1024px) {
+      .rcard-name {
+        font-size: 15px !important
+      }
+
+      .rcard-sub {
+        font-size: 12px !important
+      }
+
+      .rcard {
+        padding: 14px !important
+      }
+
+      .rcard-icon {
+        width: 54px !important;
+        height: 54px !important;
+        font-size: 26px !important
+      }
+
+      #normal-bar {
+        height: 52px !important
+      }
+
+      #normal-bar input {
+        font-size: 15px !important
+      }
+
+      .tag {
+        font-size: 12px !important;
+        padding: 6px 14px !important
+      }
+
+      #det-scroll {
+        padding: 0 20px 110px !important
+      }
+
+      #sheet {
+        width: 420px !important;
+      }
+
+      #sheet.peek,
+      #sheet.half {
+        transform: translateX(0) !important;
+      }
+
+      #sheet.gone {
+        transform: translateX(110%) !important;
+      }
+    }
+
+    /* ── TV / ULTRA-WIDE ─────────────────────────────────────────── */
+    @media (min-width:1600px) {
+      #sheet {
+        width: 500px !important;
+      }
+
+      .rcard-name {
+        font-size: 17px !important
+      }
+
+      #list-head {
+        padding: 14px 20px 10px !important
+      }
+
+      #list-count {
+        font-size: 12px !important
+      }
+
+      .rcard {
+        padding: 16px !important;
+        margin-bottom: 11px !important
+      }
+    }
+
+    /* ── PHONE: keep original single-column feel ────────────────── */
+    @media (max-width:599px) {
+      #app {
+        max-width: 480px;
+        margin: 0 auto
+      }
+
+      html,
+      body {
+        overflow: hidden
+      }
+    }
+
+    /* ── HERO FOOD IMAGE ──────────────────────────────────────── */
+    #hero-banner {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      flex-shrink: 0;
+      overflow: hidden;
+      background: #0a0a10;
+    }
+
+    #hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 60%;
+      filter: brightness(.55) saturate(.8);
+      transition: filter .4s;
+    }
+
+    /* Dark gradient overlay so text/bar reads cleanly */
+    #hero-banner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+          rgba(9, 9, 15, .15) 0%,
+          rgba(9, 9, 15, .0) 40%,
+          rgba(9, 9, 15, .8) 85%,
+          var(--bg) 100%);
+      pointer-events: none;
+    }
+
+    /* City tagline over the photo */
+    #hero-label {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #hero-label .hl-city {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
+    }
+
+    #hero-label .hl-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .7);
+      margin-top: 3px;
+      letter-spacing: .5px;
+    }
+
+    /* In list mode, hide the hero */
+    #hero-banner.hidden {
+      display: none
+    }
+
+    #main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      min-height: 0
+    }
+
+    #map-section {
+      flex-shrink: 0;
+      height: 40vh;
+      min-height: 220px;
+      transition: height .38s cubic-bezier(.4, 0, .2, 1), opacity .3s;
+      overflow: hidden;
+      position: relative;
+      margin: 8px 12px 0;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .4)
+    }
+
+    #map-section.hidden {
+      height: 0 !important;
+      min-height: 0 !important;
+      opacity: 0;
+      pointer-events: none;
+      margin: 0
+    }
+
+    #map,
+    /* View toggle bar — single unified rule (duplicate removed) */
+    #view-toggle {
+      display: flex;
+      gap: 7px;
+      padding: 4px 13px 6px;
+      flex-shrink: 0;
+      background: transparent;
+      transition: background .3s;
+      position: relative;
+      z-index: 10
+    }
+
+    .view-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 0;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--s1);
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .5px;
+      transition: all .18s
+    }
+
+    .view-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff
+    }
+
+    .view-btn:not(.active):hover {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    /* FLAT LIST (list-only mode — no sheet) */
+    #flat-list {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 13px 110px
+    }
+
+    #flat-list::-webkit-scrollbar {
+      width: 3px
+    }
+
+    #flat-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px
+    }
+
+    #flat-list.visible {
+      display: block
+    }
+
+    /* ── LEAFLET MAP OVERRIDES ──────────────────────────────────── */
+    .leaflet-tile {
+      filter: var(--map-filter, none);
+    }
+
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: none !important;
+      margin-right: 12px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--bar-bg) !important;
+      backdrop-filter: blur(14px) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      width: 36px !important;
+      height: 36px !important;
+      line-height: 36px !important;
+      font-size: 18px !important;
+      border-radius: 10px !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      color: var(--accent) !important;
+    }
+
+    .leaflet-control-attribution {
+      display: none !important;
+    }
+
+    .leaflet-zoom-animated {
+      transition: transform 0.12s ease-out !important;
+    }
+
+    /* ── RESTAURANT MAP MARKERS ─────────────────────────────────── */
+    .food-marker {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2.5px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
+    }
+
+    .food-marker:hover,
+    .food-marker.active {
+      transform: scale(1.22);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .55);
+      z-index: 999 !important;
+    }
+
+    .food-marker.ai-highlight {
+      animation: ai-pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes ai-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(167, 139, 250, .7);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(167, 139, 250, 0);
+      }
+    }
+
+    /* ── GOOGLE PLACES FETCH BANNER ─────────────────────────────── */
+    #places-fetch-bar {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 500;
+      background: var(--bar-bg);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .35);
+      transition: opacity .3s;
+      pointer-events: all;
+    }
+
+    #places-fetch-bar.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #places-fetch-bar .pfb-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: pfb-blink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pfb-blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .3
+      }
+    }
+
+    #places-fetch-bar button {
+      background: var(--accent);
+      border: none;
+      border-radius: 9px;
+      padding: 5px 12px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: opacity .15s;
+      letter-spacing: .4px;
+    }
+
+    #places-fetch-bar button:hover {
+      opacity: .85;
+    }
+
+    /* ── PLACES LOADING OVERLAY ─────────────────────────────────── */
+    #places-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 600;
+      background: rgba(9, 9, 15, .75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      border-radius: inherit;
+    }
+
+    #places-loading.show {
+      display: flex;
+    }
+
+    #places-loading .pl-spin {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: sp .75s linear infinite;
+    }
+
+    #places-loading .pl-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+    }
+
+    /* TOPBAR — floats over hero on mobile only */
+    #topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+      padding: 14px 13px 0;
+      pointer-events: none;
+    }
+
+    #topbar>* {
+      pointer-events: auto
+    }
+
+    /* Spacer: reserves space so controls don't hide behind topbar */
+    #topbar-spacer {
+      flex-shrink: 0;
+      height: 64px;
+      display: block
+    }
+
+    /* Controls bar */
+    #controls-bar {
+      flex-shrink: 0;
+      background: var(--bg);
+      transition: background .3s;
+      padding-bottom: 4px
+    }
+
+    /* TAGS */
+    #tags {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 13px 4px;
+      scrollbar-width: none
+    }
+
+    #tags::-webkit-scrollbar {
+      display: none
+    }
+
+    /* Normal search bar */
+    #normal-bar {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--bar-bg);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid var(--border);
+      border-radius: 17px;
+      padding: 0 11px;
+      height: 48px;
+      transition: border-color .2s, box-shadow .2s;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%
+    }
+
+    #normal-bar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 85, 51, .1)
+    }
+
+    #normal-bar input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px
+    }
+
+    #normal-bar input::placeholder {
+      color: var(--muted)
+    }
+
+    #ai-toggle {
+      background: linear-gradient(135deg, var(--ai2), var(--ai));
+      border: none;
+      border-radius: 10px;
+      padding: 5px 10px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: opacity .15s;
+      letter-spacing: .3px
+    }
+
+    #ai-toggle:hover {
+      opacity: .88
+    }
+
+    #locbtn {
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      transition: transform .15s
+    }
+
+    #locbtn:hover {
+      transform: scale(1.08)
+    }
+
+    /* AI BAR */
+    #ai-bar {
+      display: none;
+      margin-top: 8px;
+      background: var(--ai-bar-bg);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid var(--ai2);
+      border-radius: 17px;
+      overflow: hidden;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, .12), 0 8px 32px rgba(0, 0, 0, .5);
+      animation: aiSlide .25s ease
+    }
+
+    @keyframes aiSlide {
+      from {
+        opacity: 0;
+        transform: translateY(-8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    #ai-bar.open {
+      display: block
+    }
+
+    .ai-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 13px 0
+    }
+
+    .ai-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ai);
+      animation: pulse 1.5s infinite;
+      flex-shrink: 0
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .5;
+        transform: scale(.7)
+      }
+    }
+
+    .ai-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--ai);
+      letter-spacing: 2px;
+      text-transform: uppercase
+    }
+
+    .ai-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 2px
+    }
+
+    .ai-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px 11px
+    }
+
+    #ai-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px
+    }
+
+    #ai-input::placeholder {
+      color: var(--muted)
+    }
+
+    #ai-send {
+      background: linear-gradient(135deg, var(--ai2), var(--ai));
+      border: none;
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      flex-shrink: 0;
+      transition: opacity .15s
+    }
+
+    #ai-send:hover {
+      opacity: .88
+    }
+
+    .ai-chips {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding: 0 11px 10px;
+      scrollbar-width: none
+    }
+
+    .ai-chips::-webkit-scrollbar {
+      display: none
+    }
+
+    .ai-chip {
+      background: rgba(124, 58, 237, .15);
+      border: 1px solid rgba(167, 139, 250, .25);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ai);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background .15s;
+      font-family: 'DM Sans', sans-serif
+    }
+
+    .ai-chip:hover {
+      background: rgba(124, 58, 237, .28)
+    }
+
+    /* AI RESULT BUBBLE */
+    #ai-result {
+      display: none;
+      margin-top: 8px;
+      background: var(--ai-bar-bg);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(167, 139, 250, .3);
+      border-radius: 17px;
+      padding: 12px 14px;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, .08);
+      animation: aiSlide .3s ease
+    }
+
+    #ai-result.open {
+      display: block
+    }
+
+    .ai-res-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 8px
+    }
+
+    .ai-res-icon {
+      font-size: 18px
+    }
+
+    .ai-res-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ai)
+    }
+
+    #ai-explanation {
+      font-size: 12px;
+      color: #8888AA;
+      line-height: 1.55;
+      margin-bottom: 10px
+    }
+
+    .ai-match {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 7px;
+      cursor: pointer;
+      transition: border-color .15s
+    }
+
+    .ai-match:hover {
+      border-color: var(--ai)
+    }
+
+    .ai-match .am-emoji {
+      font-size: 22px;
+      flex-shrink: 0
+    }
+
+    .ai-match .am-info {
+      flex: 1;
+      min-width: 0
+    }
+
+    .ai-match .am-name {
+      font-weight: 700;
+      font-size: 13px;
+      font-family: 'Syne', sans-serif
+    }
+
+    .ai-match .am-why {
+      font-size: 11px;
+      color: var(--ai);
+      margin-top: 2px;
+      font-style: italic
+    }
+
+    .ai-match .am-dish {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .ai-match .am-price {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0
+    }
+
+    .ai-thinking {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      color: var(--ai);
+      font-size: 12px;
+      font-style: italic
+    }
+
+    .thinking-dots span {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--ai);
+      margin: 0 2px;
+      animation: bounce .9s infinite
+    }
+
+    .thinking-dots span:nth-child(2) {
+      animation-delay: .15s
+    }
+
+    .thinking-dots span:nth-child(3) {
+      animation-delay: .3s
+    }
+
+    @keyframes bounce {
+
+      0%,
+      80%,
+      100% {
+        transform: translateY(0)
+      }
+
+      40% {
+        transform: translateY(-6px)
+      }
+    }
+
+
+    .tag {
+      background: var(--s1);
+      backdrop-filter: blur(14px);
+      border: 1.5px solid var(--border);
+      border-radius: 30px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'DM Sans', sans-serif;
+      user-select: none
+    }
+
+    .tag.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff
+    }
+
+    .tag:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    /* MARKERS */
+    .food-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .55)
+    }
+
+    .food-marker.active {
+      border-color: #fff !important;
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, .2), 0 6px 20px rgba(0, 0, 0, .7) !important;
+      transform: scale(1.2)
+    }
+
+    .food-marker.ai-highlight {
+      box-shadow: 0 0 0 4px rgba(167, 139, 250, .5), 0 6px 20px rgba(0, 0, 0, .7) !important;
+      border-color: var(--ai) !important
+    }
+
+    /* SHEET */
+    #sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 600;
+      background: var(--bg);
+      border-radius: 24px 24px 0 0;
+      border-top: 1.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform .38s cubic-bezier(.4, 0, .2, 1);
+      max-height: 88vh
+    }
+
+    #sheet.peek {
+      transform: translateY(calc(100% - 108px))
+    }
+
+    #sheet.half {
+      transform: translateY(0)
+    }
+
+    #sheet.gone {
+      transform: translateY(100%)
+    }
+
+    /* List mode: sheet becomes static, fills the flex column space */
+    #sheet.list-mode {
+      position: static;
+      transform: none !important;
+      border-radius: 0;
+      border-top: 1.5px solid var(--border);
+      flex: 1;
+      max-height: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
+
+    #drag-h {
+      width: 38px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 11px auto 0;
+      flex-shrink: 0;
+      cursor: ns-resize
+    }
+
+    #sheet.list-mode #drag-h {
+      display: none
+    }
+
+    /* THEME PICKER */
+    #theme-bar {
+      display: flex;
+      gap: 7px;
+      padding: 0 13px 0;
+      flex-shrink: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      transition: all .3s
+    }
+
+    #theme-bar::-webkit-scrollbar {
+      display: none
+    }
+
+    .theme-dot-row {
+      display: flex;
+      gap: 7px;
+      align-items: center
+    }
+
+    .tdot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s;
+      flex-shrink: 0
+    }
+
+    .tdot:hover {
+      transform: scale(1.15)
+    }
+
+    .tdot.active {
+      border-color: var(--text)
+    }
+
+    /* LIST */
+    /* Hidden state for list-view while detail panel is open */
+    #list-view.det-hidden {
+      display: none !important;
+    }
+
+    #list-view {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    #list-head {
+      padding: 10px 16px 8px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    #list-count {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase
+    }
+
+    #ai-mode-badge {
+      display: none;
+      background: rgba(124, 58, 237, .18);
+      border: 1px solid rgba(167, 139, 250, .3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ai);
+      font-family: 'Syne', sans-serif;
+      letter-spacing: .5px
+    }
+
+    #list-scroll {
+      overflow-y: auto;
+      padding: 0 14px 80px;
+      flex: 1;
+      min-height: 0
+    }
+
+    #list-scroll::-webkit-scrollbar {
+      width: 3px
+    }
+
+    #list-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px
+    }
+
+    .rcard {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px;
+      margin-bottom: 9px;
+      display: flex;
+      gap: 11px;
+      cursor: pointer;
+      transition: border-color .18s, transform .18s
+    }
+
+    .rcard:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px)
+    }
+
+    .rcard.ai-card {
+      border-color: rgba(167, 139, 250, .25)
+    }
+
+    .rcard.ai-card:hover {
+      border-color: var(--ai)
+    }
+
+    .rcard-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+      flex-shrink: 0
+    }
+
+    .rcard-info {
+      flex: 1;
+      min-width: 0
+    }
+
+    .rcard-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700
+    }
+
+    .rcard-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .rcard-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 7px
+    }
+
+    .stars {
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: .5px
+    }
+
+    .pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px
+    }
+
+    .ai-reason {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--ai);
+      font-style: italic;
+      border-left: 2px solid rgba(167, 139, 250, .4);
+      padding-left: 8px
+    }
+
+    .match-dish {
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 7px;
+      padding: 2px 8px;
+      display: inline-block
+    }
+
+    /* DETAIL */
+    #detail-view {
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      border-radius: 24px 24px 0 0
+    }
+
+    #detail-view.open {
+      display: flex
+    }
+
+    #det-back {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text);
+      transition: border-color .15s
+    }
+
+    #det-back:hover {
+      border-color: var(--accent)
+    }
+
+    #det-like {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 10;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background .2s
+    }
+
+    #det-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0 16px 110px
+    }
+
+    #det-scroll::-webkit-scrollbar {
+      width: 3px
+    }
+
+    #det-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px
+    }
+
+    .d-hero {
+      text-align: center;
+      padding: 52px 16px 16px
+    }
+
+    .d-hero .de {
+      font-size: 56px;
+      display: block
+    }
+
+    .d-hero h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 23px;
+      font-weight: 800;
+      margin-top: 6px
+    }
+
+    .d-hero .dc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px
+    }
+
+    .d-hero .dr {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 9px;
+      flex-wrap: wrap
+    }
+
+    .d-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 0 0 12px
+    }
+
+    .d-tag {
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 3px 10px
+    }
+
+    hr.div {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2px 0
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      padding: 12px 0
+    }
+
+    .ic {
+      background: var(--s1);
+      border-radius: 12px;
+      padding: 11px
+    }
+
+    .ic .icl {
+      font-size: 9px;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 3px
+    }
+
+    .ic .icv {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4
+    }
+
+    .sec {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 0 9px
+    }
+
+    .mrow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .mrow .mn {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .hot-t {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--accent);
+      background: rgba(255, 85, 51, .13);
+      border: 1px solid rgba(255, 85, 51, .28);
+      border-radius: 5px;
+      padding: 1px 5px
+    }
+
+    .mrow .mp {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 14px
+    }
+
+    .rvc {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 11px;
+      margin-bottom: 8px
+    }
+
+    .rvh {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      margin-bottom: 6px
+    }
+
+    .av {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      color: #fff;
+      flex-shrink: 0
+    }
+
+    .rvc p {
+      font-size: 12px;
+      color: #8888AA;
+      line-height: 1.5
+    }
+
+    .srow {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 9px
+    }
+
+    .sb {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      opacity: .22;
+      transition: opacity .12s, transform .12s
+    }
+
+    .sb.lit {
+      opacity: 1
+    }
+
+    .sb:hover {
+      transform: scale(1.2)
+    }
+
+    .rinputw {
+      display: flex;
+      gap: 7px
+    }
+
+    .rinputw input {
+      flex: 1;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s
+    }
+
+    .rinputw input:focus {
+      border-color: var(--accent)
+    }
+
+    .pbtn {
+      background: var(--accent);
+      border: none;
+      border-radius: 11px;
+      padding: 0 15px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer
+    }
+
+    .dir-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: opacity .15s
+    }
+
+    .dir-btn:hover {
+      opacity: .88
+    }
+
+    /* ADD VIEW */
+    #add-view {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 800;
+      background: var(--bg);
+      overflow-y: auto;
+      padding-bottom: 100px
+    }
+
+    #add-view.open {
+      display: block
+    }
+
+    .at {
+      padding: 20px 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .at h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800
+    }
+
+    .ab {
+      padding: 18px 16px 0
+    }
+
+    .fl {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 5px
+    }
+
+    .fi {
+      width: 100%;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color .2s
+    }
+
+    .fi:focus {
+      border-color: var(--accent)
+    }
+
+    .uz {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 12px;
+      transition: border-color .18s, background .18s
+    }
+
+    .uz:hover {
+      border-color: var(--accent);
+      background: rgba(255, 85, 51, .04)
+    }
+
+    .uz .ui {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 5px
+    }
+
+    .subtn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 4px
+    }
+
+    /* ── SAVED VIEW ─────────────────────────────────────────────── */
+    #saved-view {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 800;
+      background: var(--bg);
+      overflow-y: auto;
+      padding-bottom: 100px
+    }
+
+    #saved-view.open {
+      display: block
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 16px 0
+    }
+
+    .page-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800
+    }
+
+    .page-content {
+      padding: 18px 16px 0
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted)
+    }
+
+    .empty-state .es-icon {
+      font-size: 52px;
+      margin-bottom: 14px
+    }
+
+    .empty-state h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 6px
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      line-height: 1.6
+    }
+
+    /* ── PROFILE VIEW ────────────────────────────────────────────── */
+    #profile-view {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 800;
+      background: var(--bg);
+      overflow-y: auto;
+      padding-bottom: 100px
+    }
+
+    #profile-view.open {
+      display: block
+    }
+
+    /* Login screen */
+    #login-screen {
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center
+    }
+
+    .login-logo {
+      font-size: 52px;
+      margin-bottom: 12px
+    }
+
+    .login-wordmark {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 6px
+    }
+
+    .login-tagline {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 40px;
+      line-height: 1.5
+    }
+
+    .login-card {
+      width: 100%;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px
+    }
+
+    .login-card h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 6px
+    }
+
+    .login-card p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 20px
+    }
+
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: #fff;
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a1a1a;
+      transition: opacity .15s, transform .1s;
+      margin-bottom: 10px
+    }
+
+    .google-btn:hover {
+      opacity: .92;
+      transform: scale(.99)
+    }
+
+    .google-btn svg {
+      flex-shrink: 0
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 11px
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border)
+    }
+
+    .skip-btn {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px;
+      width: 100%;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s
+    }
+
+    .skip-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    .login-perks {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 20px
+    }
+
+    .perk {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px
+    }
+
+    .perk-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0
+    }
+
+    /* Logged-in profile */
+    #logged-profile {
+      padding: 0 0 20px
+    }
+
+    .profile-hero {
+      background: linear-gradient(160deg, rgba(124, 58, 237, .15), rgba(255, 85, 51, .08));
+      border-bottom: 1px solid var(--border);
+      padding: 40px 20px 24px;
+      text-align: center;
+      position: relative
+    }
+
+    .profile-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      margin: 0 auto 12px;
+      background: var(--s2);
+      position: relative
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover
+    }
+
+    .profile-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 3px
+    }
+
+    .profile-email {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .profile-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 85, 51, .12);
+      border: 1px solid rgba(255, 85, 51, .25);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'Syne', sans-serif;
+      margin-top: 10px;
+      letter-spacing: .5px
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      margin-top: 0
+    }
+
+    .stat-box {
+      background: var(--s1);
+      padding: 16px 8px;
+      text-align: center
+    }
+
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+      font-family: 'Syne', sans-serif
+    }
+
+    .profile-section {
+      padding: 20px 16px 0
+    }
+
+    .profile-section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px
+    }
+
+    .pref-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 20px
+    }
+
+    .pref-tag {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'DM Sans', sans-serif
+    }
+
+    .pref-tag.selected {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(255, 85, 51, .08)
+    }
+
+    .menu-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color .15s
+    }
+
+    .menu-row:hover {
+      border-color: var(--accent)
+    }
+
+    .menu-row-left {
+      display: flex;
+      align-items: center;
+      gap: 11px
+    }
+
+    .menu-row-icon {
+      font-size: 18px;
+      width: 32px;
+      text-align: center
+    }
+
+    .menu-row-text {
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .menu-row-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px
+    }
+
+    .menu-row-arrow {
+      color: var(--muted);
+      font-size: 14px
+    }
+
+    .logout-btn {
+      width: calc(100% - 32px);
+      margin: 16px;
+      background: rgba(255, 85, 51, .1);
+      border: 1.5px solid rgba(255, 85, 51, .25);
+      border-radius: 13px;
+      padding: 13px;
+      color: var(--accent);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 85, 51, .18)
+    }
+
+    /* NAV */
+    #nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 9500;
+      background: var(--bar-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 10px 0 max(20px, env(safe-area-inset-bottom));
+      transition: background .3s
+    }
+
+    .nb {
+      flex: 1;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 0
+    }
+
+    .nb .ni {
+      font-size: 19px
+    }
+
+    .nb .nl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif
+    }
+
+    .nb.active .nl {
+      color: var(--accent)
+    }
+
+    /* TOAST */
+    #toast {
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      z-index: 9600;
+      transform: translateX(-50%) translateY(-10px);
+      background: #162A1E;
+      border: 1px solid var(--green);
+      color: var(--green);
+      border-radius: 11px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s, transform .25s
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0)
+    }
+
+    #toast.err {
+      background: #2A1616;
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    /* LOADER */
+    #loader {
+      position: absolute;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px
+    }
+
+    .spin {
+      width: 42px;
+      height: 42px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: sp .7s linear infinite
+    }
+
+    @keyframes sp {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .sl {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2.5px;
+      text-transform: uppercase
+    }
+
+    /* GOOGLE loading state */
+    .google-btn.loading {
+      opacity: .6;
+      pointer-events: none
+    }
+
+    .google-btn.loading::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid #aaa;
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: sp .6s linear infinite;
+      margin-left: 6px
+    }
+
+    /* Email login inputs */
+    .login-input {
+      width: 100%;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 40px 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      box-sizing: border-box
+    }
+
+    .login-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 85, 51, .1)
+    }
+
+    .email-login-btn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity .15s;
+      margin-bottom: 6px
+    }
+
+    .email-login-btn:hover {
+      opacity: .88
+    }
+
+    .email-login-btn.loading {
+      opacity: .6;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px
+    }
+
+    .email-login-btn.loading::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: sp .6s linear infinite
+    }
+
+    /* ── PROFILE SUB-PAGES ───────────────────────────────────── */
+    .sub-page {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 900;
+      background: var(--bg);
+      overflow-y: auto;
+      padding-bottom: 30px
+    }
+
+    .sub-page.open {
+      display: block
+    }
+
+    .sub-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10
+    }
+
+    .sub-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800
+    }
+
+    .sub-back {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: var(--text);
+      flex-shrink: 0;
+      transition: border-color .15s
+    }
+
+    .sub-back:hover {
+      border-color: var(--accent)
+    }
+
+    .sub-body {
+      padding: 16px
+    }
+
+    /* Activity feed */
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 14px;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color .15s
+    }
+
+    .activity-item:hover {
+      border-color: var(--accent)
+    }
+
+    .act-emoji {
+      font-size: 28px;
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .act-info {
+      flex: 1
+    }
+
+    .act-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700
+    }
+
+    .act-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .act-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-top: 5px;
+      display: inline-block
+    }
+
+    /* Notification toggles */
+    .notif-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .notif-info {
+      flex: 1
+    }
+
+    .notif-title {
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .notif-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .toggle {
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0
+    }
+
+    .toggle.on {
+      background: var(--accent)
+    }
+
+    .toggle::after {
+      content: '';
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform .2s
+    }
+
+    .toggle.on::after {
+      transform: translateX(20px)
+    }
+
+    /* Feedback form */
+    .feed-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      margin-top: 14px
+    }
+
+    .feed-textarea {
+      width: 100%;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      resize: none;
+      height: 120px;
+      transition: border-color .2s
+    }
+
+    .feed-textarea:focus {
+      border-color: var(--accent)
+    }
+
+    .feed-select {
+      width: 100%;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 0;
+      appearance: none;
+      cursor: pointer
+    }
+
+    .rating-stars {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px
+    }
+
+    .rating-star {
+      font-size: 28px;
+      cursor: pointer;
+      opacity: .3;
+      transition: opacity .15s, transform .1s
+    }
+
+    .rating-star.lit {
+      opacity: 1
+    }
+
+    .rating-star:hover {
+      transform: scale(1.2)
+    }
+
+    /* ── LANGUAGE SWITCHER ───────────────────────────────────── */
+    .lang-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color .18s, background .18s
+    }
+
+    .lang-option:hover {
+      border-color: var(--accent)
+    }
+
+    .lang-option.active {
+      border-color: var(--accent);
+      background: rgba(255, 85, 51, .06)
+    }
+
+    .lang-flag {
+      font-size: 28px;
+      flex-shrink: 0
+    }
+
+    .lang-info {
+      flex: 1
+    }
+
+    .lang-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700
+    }
+
+    .lang-native {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .lang-check {
+      font-size: 18px;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity .15s
+    }
+
+    .lang-option.active .lang-check {
+      opacity: 1
+    }
+
+    /* ── GOOGLE ACCOUNT PICKER MODAL ──────────────────────────── */
+    #google-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, .55);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #google-modal-overlay.open {
+      display: flex;
+    }
+
+    #google-modal {
+      background: var(--s1);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      padding: 0;
+      width: 100%;
+      max-width: 380px;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, .55);
+      animation: gModalIn .22s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    @keyframes gModalIn {
+      from {
+        opacity: 0;
+        transform: scale(.94) translateY(12px)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0)
+      }
+    }
+
+    .gm-header {
+      background: linear-gradient(135deg, #4285F4, #1a73e8);
+      padding: 28px 24px 20px;
+      text-align: center;
+    }
+
+    .gm-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .gm-logo-g {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gm-header-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .gm-header-sub {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .75);
+      margin-top: 4px;
+    }
+
+    .gm-body {
+      padding: 20px 20px 8px;
+    }
+
+    .gm-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      font-family: 'Syne', sans-serif;
+    }
+
+    .gm-account {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--s2);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      margin-bottom: 10px;
+    }
+
+    .gm-account:hover {
+      border-color: #4285F4;
+      background: rgba(66, 133, 244, .06);
+    }
+
+    .gm-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #4285F4, #1a73e8);
+    }
+
+    .gm-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .gm-acc-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .gm-acc-email {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .gm-acc-check {
+      margin-left: auto;
+      color: #4285F4;
+      font-size: 18px;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .gm-account:hover .gm-acc-check {
+      opacity: 1;
+    }
+
+    .gm-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0 14px;
+    }
+
+    .gm-use-another {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      border: 1.5px dashed var(--border);
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      transition: border-color .15s, color .15s;
+      margin-bottom: 4px;
+    }
+
+    .gm-use-another:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .gm-input-group {
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .gm-input {
+      width: 100%;
+      background: var(--s2);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 42px 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      box-sizing: border-box;
+    }
+
+    .gm-input:focus {
+      border-color: #4285F4;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, .12);
+    }
+
+    .gm-input-icon {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .gm-continue-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4285F4, #1a73e8);
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity .15s;
+      margin-bottom: 10px;
+    }
+
+    .gm-continue-btn:hover {
+      opacity: .9;
+    }
+
+    .gm-continue-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .gm-footer {
+      padding: 14px 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .gm-cancel {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      padding: 9px 18px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+
+    .gm-cancel:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .gm-policy {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+      text-align: center;
+      padding: 0 20px 16px;
+    }
+
+    .gm-error {
+      font-size: 11px;
+      color: #EA4335;
+      background: rgba(234, 67, 53, .1);
+      border: 1px solid rgba(234, 67, 53, .25);
+      border-radius: 9px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .gm-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: sp .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    /* Map Provider Toggle */
+    #map-provider-toggle {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      background: var(--bar-bg);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .mpt-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mpt-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="loader">
+      <div class="spin"></div>
+      <div class="sl">Chargement FoodMap</div>
+    </div>
+
+    <!-- Topbar: only search bars (absolute, floats over map) -->
+    <div id="topbar">
+      <div id="normal-bar">
+        <span style="font-size:17px;opacity:.6">🔍</span>
+        <input id="search-input" type="text" placeholder="Rechercher plat, cuisine, restaurant…" oninput="onSearch()"
+          autocomplete="off" />
+        <button id="ai-toggle" onclick="toggleAI()">✦ Ask AI</button>
+        <button id="locbtn" onclick="locateMe()">📍</button>
+      </div>
+
+      <div id="ai-bar">
+        <div class="ai-header">
+          <div class="ai-dot"></div>
+          <span class="ai-label">Recherche IA</span>
+          <button class="ai-close" onclick="toggleAI()">✕</button>
+        </div>
+        <div class="ai-chips">
+          <div class="ai-chip" onclick="aiChip(this)">Quelque chose d'épicé et pas cher</div>
+          <div class="ai-chip" onclick="aiChip(this)">Cuisine camerounaise authentique</div>
+          <div class="ai-chip" onclick="aiChip(this)">Livraison disponible maintenant</div>
+          <div class="ai-chip" onclick="aiChip(this)">Fruits de mer frais</div>
+          <div class="ai-chip" onclick="aiChip(this)">Sortir en groupe ce soir</div>
+          <div class="ai-chip" onclick="aiChip(this)">Repas sous 5000 FCFA</div>
+        </div>
+        <div class="ai-input-row">
+          <input id="ai-input" type="text" placeholder='ex: "quelque chose de chaud et réconfortant"…'
+            onkeydown="if(event.key==='Enter')runAI()" autocomplete="off" />
+          <button id="ai-send" onclick="runAI()">→</button>
+        </div>
+      </div>
+
+      <div id="ai-result">
+        <div class="ai-res-header">
+          <span class="ai-res-icon">✦</span>
+          <span class="ai-res-title">RECOMMANDATIONS IA</span>
+          <button onclick="clearAI()"
+            style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+        </div>
+        <div id="ai-explanation"></div>
+        <div id="ai-matches"></div>
+      </div>
+    </div>
+
+    <!-- Main area: normal flow below topbar placeholder -->
+    <div id="main-area">
+      <!-- Spacer placeholder (now zero, kept for JS compat) -->
+      <div id="topbar-spacer"></div>
+
+      <!-- ── HERO FOOD BANNER ───────────────────────────────── -->
+      <div id="hero-banner">
+        <!-- High-quality Cameroonian food photo from Unsplash (free) -->
+        <img id="hero-img"
+          src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=900&q=80&auto=format&fit=crop"
+          alt="Cuisine de Douala"
+          onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&q=80&auto=format&fit=crop'" />
+        <div id="hero-label">
+          <div class="hl-city" id="hero-city-text">🍽️ Douala</div>
+          <div class="hl-sub" id="hero-sub-text">Découvrez les meilleurs restaurants</div>
+        </div>
+      </div>
+
+      <!-- Tags & View toggle — always visible in normal flow -->
+      <div id="controls-bar">
+        <div id="tags">
+          <div class="tag active" data-tag="all" onclick="setTag(this)">Tous</div>
+          <div class="tag" data-tag="cameroonian" onclick="setTag(this)">🇨🇲 Camerounais</div>
+          <div class="tag" data-tag="grillades" onclick="setTag(this)">🔥 Grillades</div>
+          <div class="tag" data-tag="fruits de mer" onclick="setTag(this)">🦐 Mer</div>
+          <div class="tag" data-tag="maquis" onclick="setTag(this)">🍺 Maquis</div>
+          <div class="tag" data-tag="fast food" onclick="setTag(this)">🍔 Fast Food</div>
+          <div class="tag" data-tag="halal" onclick="setTag(this)">☪️ Halal</div>
+          <div class="tag" data-tag="livraison" onclick="setTag(this)">🛵 Livraison</div>
+          <div class="tag" data-tag="économique" onclick="setTag(this)">💰 Économique</div>
+        </div>
+        <div id="view-toggle">
+          <button class="view-btn active" id="btn-map" onclick="setView('map')">🗺 Carte</button>
+          <button class="view-btn" id="btn-list" onclick="setView('list')">📋 Liste</button>
+        </div>
+      </div>
+
+      <!-- Map section (collapsible) -->
+      <div id="map-section">
+        <div id="map-provider-toggle">
+          <button class="mpt-btn active" id="mpt-leaflet" onclick="setMapProvider('google')">🗺 Google Maps</button>
+          <button class="mpt-btn" id="mpt-google" onclick="fetchNearbyPlaces()">✦ Trouver + restaurants</button>
+        </div>
+        <div id="map"></div>
+        <!-- Places loading overlay -->
+        <div id="places-loading">
+          <div class="pl-spin"></div>
+          <div class="pl-text">Recherche de restaurants à Douala…</div>
+        </div>
+        <!-- Places fetch banner (shown after map loads) -->
+        <div id="places-fetch-bar" class="hidden">
+          <div class="pfb-dot"></div>
+          <span>Enrichir avec Google Places</span>
+          <button onclick="fetchNearbyPlaces()">Rechercher maintenant</button>
+        </div>
+      </div>
+
+      <!-- Sheet (map mode: bottom sheet; list mode: flat) -->
+      <div id="sheet" class="peek">
+        <div id="drag-h"></div>
+        <div id="list-view">
+          <div id="list-head">
+            <span id="list-count">0 RESTAURANTS</span>
+            <span id="ai-mode-badge">✦ MODE IA</span>
+          </div>
+          <div id="list-scroll">
+            <div id="rlist"></div>
+          </div>
+        </div>
+        <div id="detail-view">
+          <button id="det-back" onclick="closeDetail()">←</button>
+          <button id="det-like" onclick="toggleLike()">🤍</button>
+          <div id="det-scroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add view -->
+    <div id="add-view">
+      <div class="at">
+        <button onclick="closeAdd()"
+          style="background:var(--s1);border:1.5px solid var(--border);border-radius:12px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text);flex-shrink:0">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2.5px;font-weight:800;font-family:'Syne',sans-serif">
+            POUR LES RESTAURANTS</div>
+          <h2>Référencer votre établissement</h2>
+        </div>
+      </div>
+      <div class="ab">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">Rejoignez des milliers de
+          Doualais. Gratuit — 2 minutes suffisent.</p>
+        <div class="fl">Nom du restaurant</div><input class="fi" id="add-name" placeholder="ex. La Falaise" />
+        <div class="fl">Type de cuisine</div><input class="fi" id="add-cuisine"
+          placeholder="ex. Camerounais, Libanais…" />
+        <div class="fl">Adresse</div>
+        <input class="fi" id="add-addr" placeholder="Adresse complète" oninput="geocodePreview()" />
+        <div id="geo-ok" style="font-size:11px;color:var(--green);margin-top:-8px;margin-bottom:10px;display:none">✅
+          Trouvé sur la carte</div>
+        <div class="fl">Horaires d'ouverture</div><input class="fi" id="add-hours" placeholder="ex. 11:00 – 23:00" />
+        <div class="fl">Téléphone</div><input class="fi" id="add-phone" placeholder="+237 6XX XX XX XX" type="tel" />
+        <div class="fl">Gamme de prix</div><input class="fi" id="add-price" placeholder="$ / $$ / $$$ / $$$$" />
+        <div class="fl">Photos</div>
+        <div class="uz" onclick="fakeUpload('Photos ajoutées ✅')"><span class="ui">📷</span>Appuyez pour ajouter des
+          photos</div>
+        <div class="fl">Fichier menu</div>
+        <div class="uz" onclick="fakeUpload('Menu ajouté ✅')"><span class="ui">📋</span>Importer PDF ou image</div>
+        <button class="subtn" onclick="submitPlace()">Soumettre pour validation ✦</button>
+      </div>
+    </div>
+
+    <!-- Saved view -->
+    <div id="saved-view">
+      <div class="page-header">
+        <button onclick="closePage('saved')"
+          style="background:var(--s1);border:1.5px solid var(--border);border-radius:12px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text);flex-shrink:0">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2.5px;font-weight:800;font-family:'Syne',sans-serif">
+            MA LISTE</div>
+          <h2>Restaurants sauvegardés</h2>
+        </div>
+      </div>
+      <div class="page-content" id="saved-content"></div>
+    </div>
+
+    <!-- Profile view -->
+    <div id="profile-view">
+      <!-- Login screen shown when logged out -->
+      <div id="login-screen">
+        <div class="login-logo">🍽️</div>
+        <div class="login-wordmark">FoodMap</div>
+        <div class="login-tagline" id="login-tagline-text">Sauvegardez vos favoris, suivez vos avis<br />et obtenez de
+          meilleures recommandations.</div>
+
+        <!-- Theme picker for guests -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+          <span style="font-size:11px;color:var(--muted);font-weight:600">Theme:</span>
+          <div class="tdot active" data-theme-val="dark" style="background:linear-gradient(135deg,#09090F,#21212E)"
+            onclick="applyTheme('dark',this)" title="Dark"></div>
+          <div class="tdot" data-theme-val="light" style="background:linear-gradient(135deg,#F5F3EE,#E0DDD6)"
+            onclick="applyTheme('light',this)" title="Light"></div>
+          <div class="tdot" data-theme-val="sunset" style="background:linear-gradient(135deg,#1A0D0A,#FF8C42)"
+            onclick="applyTheme('sunset',this)" title="Sunset"></div>
+          <div class="tdot" data-theme-val="forest" style="background:linear-gradient(135deg,#080F0A,#52B788)"
+            onclick="applyTheme('forest',this)" title="Forest"></div>
+          <div class="tdot" data-theme-val="neon" style="background:linear-gradient(135deg,#050510,#00F5D4)"
+            onclick="applyTheme('neon',this)" title="Neon"></div>
+        </div>
+
+        <div class="login-perks">
+          <div class="perk">
+            <div class="perk-icon" style="background:rgba(255,85,51,.12)">❤️</div><span id="perk1-text">Sauvegardez vos
+              restaurants sur tous vos appareils</span>
+          </div>
+          <div class="perk">
+            <div class="perk-icon" style="background:rgba(167,139,250,.12)">✦</div><span id="perk2-text">L'IA apprend
+              vos goûts culinaires</span>
+          </div>
+          <div class="perk">
+            <div class="perk-icon" style="background:rgba(52,211,153,.12)">⭐</div><span id="perk3-text">Suivez vos avis
+              et vos notes</span>
+          </div>
+        </div>
+
+        <div class="login-card">
+          <h3 id="login-card-title">Connexion à FoodMap</h3>
+          <p id="login-card-sub">Vos favoris et préférences synchronisés sur tous vos appareils.</p>
+
+          <!-- Google Sign-In button (real GIS) -->
+          <button class="google-btn" id="google-login-btn" onclick="handleGoogleLogin()">
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <path fill="#4285F4"
+                d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+              <path fill="#34A853"
+                d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+              <path fill="#FBBC05"
+                d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
+              <path fill="#EA4335"
+                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" />
+            </svg>
+            <span id="google-btn-text">Continuer avec Google</span>
+          </button>
+
+          <div class="login-divider" id="login-divider-or">ou</div>
+
+          <!-- Email/password form (collapsible) -->
+          <div id="email-form-wrapper" style="display:none">
+            <div style="position:relative;margin-bottom:10px">
+              <input id="login-email" type="email" class="login-input" placeholder="Email" autocomplete="email" />
+            </div>
+            <div style="position:relative;margin-bottom:10px">
+              <input id="login-password" type="password" class="login-input" placeholder="Mot de passe"
+                autocomplete="current-password" onkeydown="if(event.key==='Enter')handleEmailLogin()" />
+              <button onclick="togglePasswordVisibility()" id="pw-eye"
+                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted)">👁</button>
+            </div>
+            <div id="login-error"
+              style="font-size:11px;color:var(--accent);margin-bottom:8px;display:none;text-align:left;padding:0 2px">
+            </div>
+            <button id="email-submit-btn" class="email-login-btn" onclick="handleEmailLogin()">
+              <span id="email-btn-label">Se connecter</span>
+            </button>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+              <button onclick="showForgotPassword()"
+                style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;padding:0"
+                id="forgot-pw-link">Mot de passe oublié ?</button>
+              <button onclick="toggleSignupMode()"
+                style="background:none;border:none;font-size:11px;color:var(--accent);cursor:pointer;font-weight:600;padding:0"
+                id="toggle-signup-link">Créer un compte</button>
+            </div>
+          </div>
+
+          <!-- Toggle email form -->
+          <button class="skip-btn" id="email-toggle-btn" onclick="toggleEmailForm()" style="margin-bottom:10px">
+            <span id="email-toggle-text">✉️ Continuer avec e-mail</span>
+          </button>
+          <button class="skip-btn" onclick="skipLogin()" id="skip-login-btn">Continuer sans se connecter</button>
+        </div>
+      </div>
+
+      <!-- Logged-in profile -->
+      <div id="logged-profile" style="display:none">
+        <div class="profile-hero">
+          <button onclick="closePage('profile')"
+            style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text)">←</button>
+          <div class="profile-avatar" id="profile-avatar-el">😋</div>
+          <div class="profile-name" id="profile-name-el">Foodie</div>
+          <div class="profile-email" id="profile-email-el">—</div>
+          <div class="profile-badge">✦ Membre FoodMap 🇨🇲</div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-num" id="stat-saved">0</div>
+            <div class="stat-label">Sauvés</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="stat-reviews">0</div>
+            <div class="stat-label">Avis</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="stat-visited">0</div>
+            <div class="stat-label">Visités</div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-title">Préférences culinaires</div>
+          <div class="pref-grid" id="pref-grid">
+            <div class="pref-tag" onclick="togglePref(this)">🇨🇲 Camerounais</div>
+            <div class="pref-tag" onclick="togglePref(this)">🔥 Grillades</div>
+            <div class="pref-tag" onclick="togglePref(this)">🦐 Fruits de mer</div>
+            <div class="pref-tag" onclick="togglePref(this)">🌶 Épicé</div>
+            <div class="pref-tag" onclick="togglePref(this)">🥗 Sain</div>
+            <div class="pref-tag" onclick="togglePref(this)">☪️ Halal</div>
+            <div class="pref-tag" onclick="togglePref(this)">🛵 Livraison</div>
+            <div class="pref-tag" onclick="togglePref(this)">💰 Budget</div>
+          </div>
+        </div>
+
+        <div class="profile-section" style="padding-top:4px">
+          <div class="profile-section-title">Appearance</div>
+          <div
+            style="background:var(--s1);border:1.5px solid var(--border);border-radius:13px;padding:14px 16px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:12px">Theme</div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div class="tdot active" data-theme-val="dark" style="background:linear-gradient(135deg,#09090F,#21212E)"
+                onclick="applyTheme('dark',this)" title="Dark"></div>
+              <div class="tdot" data-theme-val="light" style="background:linear-gradient(135deg,#F5F3EE,#E0DDD6)"
+                onclick="applyTheme('light',this)" title="Light"></div>
+              <div class="tdot" data-theme-val="sunset" style="background:linear-gradient(135deg,#1A0D0A,#FF8C42)"
+                onclick="applyTheme('sunset',this)" title="Sunset"></div>
+              <div class="tdot" data-theme-val="forest" style="background:linear-gradient(135deg,#080F0A,#52B788)"
+                onclick="applyTheme('forest',this)" title="Forest"></div>
+              <div class="tdot" data-theme-val="neon" style="background:linear-gradient(135deg,#050510,#00F5D4)"
+                onclick="applyTheme('neon',this)" title="Neon"></div>
+              <span id="theme-name-label" style="font-size:11px;color:var(--muted);margin-left:4px">Dark</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section" style="padding-top:4px">
+          <div class="profile-section-title">Compte</div>
+          <div class="menu-row" onclick="openSubPage('activity')">
+            <div class="menu-row-left">
+              <div class="menu-row-icon">📍</div>
+              <div>
+                <div class="menu-row-text">Activité récente</div>
+                <div class="menu-row-sub">Restaurants visités récemment</div>
+              </div>
+            </div>
+            <span class="menu-row-arrow">›</span>
+          </div>
+          <div class="menu-row" onclick="openSubPage('notifications')">
+            <div class="menu-row-left">
+              <div class="menu-row-icon">🔔</div>
+              <div>
+                <div class="menu-row-text">Notifications</div>
+                <div class="menu-row-sub">Bons plans & nouveaux restos</div>
+              </div>
+            </div>
+            <span class="menu-row-arrow">›</span>
+          </div>
+          <div class="menu-row" onclick="openSubPage('language')">
+            <div class="menu-row-left">
+              <div class="menu-row-icon">🌍</div>
+              <div>
+                <div class="menu-row-text" data-i18n="lang_region">Langue & Région</div>
+                <div class="menu-row-sub" id="current-lang-sub">Français · Douala, CM 🇨🇲</div>
+              </div>
+            </div>
+            <span class="menu-row-arrow">›</span>
+          </div>
+          <div class="menu-row" onclick="openSubPage('feedback')">
+            <div class="menu-row-left">
+              <div class="menu-row-icon">💬</div>
+              <div>
+                <div class="menu-row-text">Envoyer un avis</div>
+                <div class="menu-row-sub">Aidez-nous à améliorer FoodMap</div>
+              </div>
+            </div>
+            <span class="menu-row-arrow">›</span>
+          </div>
+        </div>
+
+        <button class="logout-btn" onclick="handleLogout()">Se déconnecter</button>
+      </div>
+    </div>
+
+    <!-- ── PROFILE SUB-PAGES (inside #app, z-index:900) ─────── -->
+
+    <!-- Activity sub-page -->
+    <div id="page-activity" class="sub-page">
+      <div class="sub-header">
+        <button class="sub-back" onclick="closeSubPage('activity')">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:800;font-family:'Syne',sans-serif">
+            HISTORIQUE</div>
+          <h2>Activité récente</h2>
+        </div>
+      </div>
+      <div class="sub-body" id="activity-body">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Notifications sub-page -->
+    <div id="page-notifications" class="sub-page">
+      <div class="sub-header">
+        <button class="sub-back" onclick="closeSubPage('notifications')">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:800;font-family:'Syne',sans-serif">
+            PARAMÈTRES</div>
+          <h2>Notifications</h2>
+        </div>
+      </div>
+      <div class="sub-body">
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:20px">Choisissez quelles alertes vous
+          souhaitez recevoir de FoodMap Douala.</p>
+        <div class="notif-row">
+          <div class="notif-info">
+            <div class="notif-title">Nouveaux restaurants</div>
+            <div class="notif-desc">Alertes quand un nouveau resto rejoint la plateforme</div>
+          </div>
+          <div class="toggle on" id="notif-new" onclick="toggleNotif(this)"></div>
+        </div>
+        <div class="notif-row">
+          <div class="notif-info">
+            <div class="notif-title">Bons plans & promos</div>
+            <div class="notif-desc">Offres spéciales et réductions près de vous</div>
+          </div>
+          <div class="toggle on" id="notif-deals" onclick="toggleNotif(this)"></div>
+        </div>
+        <div class="notif-row">
+          <div class="notif-info">
+            <div class="notif-title">Réponses à vos avis</div>
+            <div class="notif-desc">Quand un restaurant répond à votre commentaire</div>
+          </div>
+          <div class="toggle" id="notif-reviews" onclick="toggleNotif(this)"></div>
+        </div>
+        <div class="notif-row">
+          <div class="notif-info">
+            <div class="notif-title">Recommandations IA</div>
+            <div class="notif-desc">Suggestions personnalisées basées sur vos goûts</div>
+          </div>
+          <div class="toggle on" id="notif-ai" onclick="toggleNotif(this)"></div>
+        </div>
+        <div class="notif-row" style="border-bottom:none">
+          <div class="notif-info">
+            <div class="notif-title">Rappels de réservation</div>
+            <div class="notif-desc">Rappel 1h avant votre réservation</div>
+          </div>
+          <div class="toggle on" id="notif-resa" onclick="toggleNotif(this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback sub-page -->
+    <div id="page-feedback" class="sub-page">
+      <div class="sub-header">
+        <button class="sub-back" onclick="closeSubPage('feedback')">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:800;font-family:'Syne',sans-serif">
+            VOTRE AVIS</div>
+          <h2>Envoyer un avis</h2>
+        </div>
+      </div>
+      <div class="sub-body">
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:4px">Votre retour nous aide à
+          améliorer FoodMap pour toute la communauté de Douala.</p>
+
+        <div class="feed-label">Notez votre expérience</div>
+        <div class="rating-stars" id="feedback-stars">
+          <span class="rating-star lit" onclick="setFeedbackStar(1)">⭐</span>
+          <span class="rating-star lit" onclick="setFeedbackStar(2)">⭐</span>
+          <span class="rating-star lit" onclick="setFeedbackStar(3)">⭐</span>
+          <span class="rating-star" onclick="setFeedbackStar(4)">⭐</span>
+          <span class="rating-star" onclick="setFeedbackStar(5)">⭐</span>
+        </div>
+
+        <div class="feed-label">Catégorie</div>
+        <select class="feed-select" id="feedback-cat" style="margin-bottom:0">
+          <option>🐛 Bug ou problème technique</option>
+          <option>💡 Idée ou suggestion</option>
+          <option>🍽️ Signaler un restaurant incorrect</option>
+          <option>🗺️ Problème avec la carte</option>
+          <option>✦ Retour sur l'IA</option>
+          <option>💬 Autre</option>
+        </select>
+
+        <div class="feed-label">Votre message</div>
+        <textarea class="feed-textarea" id="feedback-text"
+          placeholder="Décrivez votre expérience, suggérez une amélioration…"></textarea>
+
+        <button onclick="submitFeedback()"
+          style="width:100%;background:var(--accent);border:none;border-radius:13px;padding:14px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer;margin-top:14px;transition:opacity .15s">Envoyer
+          ✦</button>
+      </div>
+    </div>
+
+    <!-- Language sub-page -->
+    <div id="page-language" class="sub-page">
+      <div class="sub-header">
+        <button class="sub-back" onclick="closeSubPage('language')">←</button>
+        <div>
+          <div
+            style="font-size:9px;color:var(--accent);letter-spacing:2px;font-weight:800;font-family:'Syne',sans-serif"
+            id="lang-header-label">PARAMÈTRES</div>
+          <h2 id="lang-header-title">Langue & Région</h2>
+        </div>
+      </div>
+      <div class="sub-body">
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:18px" id="lang-desc">Choisissez votre
+          langue d'interface. FoodMap Douala est une application bilingue.</p>
+
+        <div class="lang-option active" data-lang="fr" onclick="applyLanguage('fr', this)">
+          <span class="lang-flag">🇫🇷</span>
+          <div class="lang-info">
+            <div class="lang-name">Français</div>
+            <div class="lang-native">Langue officielle · Cameroun</div>
+          </div>
+          <span class="lang-check">✓</span>
+        </div>
+
+        <div class="lang-option" data-lang="en" onclick="applyLanguage('en', this)">
+          <span class="lang-flag">🇬🇧</span>
+          <div class="lang-info">
+            <div class="lang-name">English</div>
+            <div class="lang-native">Official language · Cameroon</div>
+          </div>
+          <span class="lang-check">✓</span>
+        </div>
+
+        <div class="lang-option" data-lang="ar" onclick="applyLanguage('ar', this)">
+          <span class="lang-flag">🇸🇦</span>
+          <div class="lang-info">
+            <div class="lang-name">العربية</div>
+            <div class="lang-native">Arabic · International</div>
+          </div>
+          <span class="lang-check">✓</span>
+        </div>
+
+        <div class="lang-option" data-lang="ew" onclick="applyLanguage('ew', this)">
+          <span class="lang-flag">🇨🇲</span>
+          <div class="lang-info">
+            <div class="lang-name">Ewondo</div>
+            <div class="lang-native">Langue locale · Centre-Sud Cameroun</div>
+          </div>
+          <span class="lang-check">✓</span>
+        </div>
+
+        <div class="lang-option" data-lang="pidgin" onclick="applyLanguage('pidgin', this)">
+          <span class="lang-flag">🤝</span>
+          <div class="lang-info">
+            <div class="lang-name">Cameroonian Pidgin</div>
+            <div class="lang-native">Pidgin English · Lingua franca</div>
+          </div>
+          <span class="lang-check">✓</span>
+        </div>
+
+        <div
+          style="margin-top:20px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px">
+          <div
+            style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">
+            Région</div>
+          <div style="font-size:13px;font-weight:600">🇨🇲 Cameroun — Douala</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Fuseau horaire: WAT (UTC+1) · Monnaie: FCFA
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <div id="nav">
+      <button class="nb active" id="nb-map" onclick="navTo('map')"><span class="ni">🗺️</span><span
+          class="nl">Explorer</span></button>
+      <button class="nb" id="nb-saved" onclick="navTo('saved')"><span class="ni">❤️</span><span
+          class="nl">Sauvés</span></button>
+      <button class="nb" id="nb-add" onclick="openAdd()"><span class="ni">➕</span><span
+          class="nl">Ajouter</span></button>
+      <button class="nb" id="nb-profile" onclick="navTo('profile')"><span class="ni">👤</span><span
+          class="nl">Profil</span></button>
+    </div>
+
+
+    <!-- ── GOOGLE ACCOUNT PICKER MODAL ──────────────────── -->
+    <div id="google-modal-overlay" onclick="closeGoogleModal(event)">
+      <div id="google-modal">
+        <div class="gm-header">
+          <div class="gm-logo">
+            <div class="gm-logo-g">
+              <svg width="20" height="20" viewBox="0 0 18 18">
+                <path fill="#4285F4"
+                  d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+                <path fill="#34A853"
+                  d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+                <path fill="#FBBC05"
+                  d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
+                <path fill="#EA4335"
+                  d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" />
+              </svg>
+            </div>
+            <span style="font-size:22px;color:#fff;font-family:'Syne',sans-serif;font-weight:800">Google</span>
+          </div>
+          <div class="gm-header-title">Connexion avec Google</div>
+          <div class="gm-header-sub">Choisissez un compte pour continuer vers FoodMap</div>
+        </div>
+
+        <!-- Step 1: account picker -->
+        <div id="gm-step-picker" class="gm-body">
+          <div class="gm-section-label">Choisir un compte</div>
+          <!-- Simulated saved account -->
+          <div class="gm-account" id="gm-saved-account" onclick="gmSelectSavedAccount()">
+            <div class="gm-avatar" id="gm-saved-avatar">👤</div>
+            <div>
+              <div class="gm-acc-name" id="gm-saved-name">Mon compte</div>
+              <div class="gm-acc-email" id="gm-saved-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__"
+                  data-cfemail="2550514c494c564451405057654248444c490b464a48">[email&#160;protected]</a></div>
+            </div>
+            <div class="gm-acc-check">›</div>
+          </div>
+          <div class="gm-divider"></div>
+          <div class="gm-use-another" onclick="gmShowEmailStep()">
+            <span style="font-size:20px">➕</span>
+            Utiliser un autre compte
+          </div>
+        </div>
+
+        <!-- Step 2: enter email for another account -->
+        <div id="gm-step-email" class="gm-body" style="display:none">
+          <div class="gm-section-label">Connexion</div>
+          <div class="gm-error" id="gm-email-error"></div>
+          <div class="gm-input-group">
+            <input class="gm-input" id="gm-email-input" type="email" placeholder="Adresse e-mail ou téléphone"
+              oninput="gmValidateEmail()" onkeydown="if(event.key==='Enter')gmNextFromEmail()" />
+            <span class="gm-input-icon">✉️</span>
+          </div>
+          <button class="gm-continue-btn" id="gm-email-next" onclick="gmNextFromEmail()" disabled>Suivant</button>
+          <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px">
+            Pas de compte ? <span style="color:#4285F4;cursor:pointer;font-weight:600"
+              onclick="gmShowEmailStep(true)">Créer un compte</span>
+          </div>
+        </div>
+
+        <!-- Step 3: enter password -->
+        <div id="gm-step-password" class="gm-body" style="display:none">
+          <div class="gm-section-label">Mot de passe</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px" id="gm-pw-email-display"></div>
+          <div class="gm-error" id="gm-pw-error"></div>
+          <div class="gm-input-group" style="position:relative">
+            <input class="gm-input" id="gm-pw-input" type="password" placeholder="Saisir votre mot de passe"
+              onkeydown="if(event.key==='Enter')gmSubmitPassword()" />
+            <span class="gm-input-icon" style="cursor:pointer" onclick="gmTogglePw()">👁</span>
+          </div>
+          <div style="font-size:11px;color:#4285F4;cursor:pointer;margin-bottom:14px" onclick="gmForgotPw()">Mot de
+            passe oublié ?</div>
+          <button class="gm-continue-btn" id="gm-pw-next" onclick="gmSubmitPassword()">Se connecter</button>
+        </div>
+
+        <div class="gm-footer">
+          <button class="gm-cancel" onclick="closeGoogleModal()">Annuler</button>
+          <div style="display:flex;gap:10px">
+            <button id="gm-back-btn"
+              style="display:none;background:none;border:none;color:#4285F4;font-size:13px;cursor:pointer;font-weight:600"
+              onclick="gmBack()">← Retour</button>
+          </div>
+        </div>
+        <div class="gm-policy">⚠️ <strong>Mode démonstration uniquement</strong> — aucune vraie connexion Google n'est
+          effectuée. Ce modal est automatiquement bloqué en production dès que vous configurez un vrai
+          <code>GOOGLE_CLIENT_ID</code>. Entrez n'importe quel mot de passe (6+ caractères) pour tester.
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+  <script>
+    // ── DATA — Real restaurants in Douala, Cameroon ──────────────────────────
+    const DATA = [
+      {
+        id: 1, name: "La Falaise", cuisine: "Cameroonian · Continental", type: "Restaurant",
+        lat: 4.0511, lng: 9.7679, address: "Rue Pau, Bonanjo, Douala",
+        neighborhood: "Bonanjo", phone: "+237 233 42 45 55",
+        whatsapp: "+237233424555",
+        rating: 4.7, reviews: 284, price: "$$$", priceNum: 3, emoji: "🍽️", color: "#E63946",
+        tags: ["cameroonian", "continental", "grillades", "poisson", "viande", "business lunch", "terrasse"],
+        hours: "12:00 – 23:00", spicy: false, healthy: false,
+        delivery: false, takeaway: true, reservations: true,
+        popular: [0, 2], // indices of popular menu items
+        menu: [
+          { n: "Poulet DG (entier)", p: 18000, h: false, desc: "Poulet rôti sauce tomate & plantain frit — la référence nationale" },
+          { n: "Ndolé au poisson fumé", p: 7500, h: true, desc: "Feuilles de ndolé, poisson fumé, crevettes — plat national du Cameroun" },
+          { n: "Côte de bœuf grillée", p: 22000, h: false, desc: "350g, frites maison, légumes grillés" },
+          { n: "Capitaine braisé entier", p: 15000, h: true, desc: "Poisson frais du Wouri, sauce pimentée & mitonkwane" },
+          { n: "Eru & Waterleaf", p: 6000, h: true, desc: "Légumes traditionnels, huile de palme, viande fumée" },
+          { n: "Jus de Maracuja frais", p: 1500, h: false, desc: "Pressé à la commande" },
+        ],
+        revs: [
+          { u: "Kévin T.", t: "Le Poulet DG est à tomber — meilleur de Bonanjo.", s: 5 },
+          { u: "Marie-Claire N.", t: "Cadre agréable pour un déjeuner d'affaires. Service pro.", s: 4 },
+          { u: "Alain F.", t: "Le ndolé est authentique, goût de grand-mère.", s: 5 },
+        ]
+      },
+      {
+        id: 2, name: "Le Biniou", cuisine: "Cameroonian · Grillades", type: "Maquis · Bar",
+        lat: 4.0612, lng: 9.7812, address: "Akwa Nord, Douala",
+        neighborhood: "Akwa", phone: "+237 699 23 45 67",
+        whatsapp: "+237699234567",
+        rating: 4.5, reviews: 412, price: "$$", priceNum: 2, emoji: "🔥", color: "#FF8C42",
+        tags: ["maquis", "grillades", "brochettes", "bière", "poulet", "poisson", "ambiance", "akwa"],
+        hours: "17:00 – 02:00", spicy: true, healthy: false,
+        delivery: false, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Brochettes de bœuf (6pc)", p: 2500, h: true, desc: "Marinées au gingembre & piment, sauce arachide" },
+          { n: "Poulet braisé demi", p: 5500, h: true, desc: "Grillé au charbon de bois, servi avec mitonkwane" },
+          { n: "Poisson braisé (tilapia)", p: 4500, h: false, desc: "Tilapia entier braisé, sauce gombo" },
+          { n: "Plantain braisé & sauce piment", p: 1500, h: true, desc: "Plantain mûr grillé, sauce tomate-piment maison" },
+          { n: "Bière 33 Export (bouteille)", p: 800, h: false, desc: "50cl, bien fraîche" },
+          { n: "Malte Guinness", p: 700, h: false, desc: "33cl" },
+        ],
+        revs: [
+          { u: "Patrick M.", t: "Les meilleures brochettes d'Akwa. L'ambiance le soir est top !", s: 5 },
+          { u: "Solange B.", t: "Poulet braisé cuit à la perfection. Prix corrects.", s: 4 },
+          { u: "Jean-Pierre K.", t: "Endroit sympa pour sortir en groupe.", s: 4 },
+        ]
+      },
+      {
+        id: 3, name: "Wouri Seafood", cuisine: "Fruits de Mer · Cameroonian", type: "Restaurant",
+        lat: 4.0455, lng: 9.6970, address: "Bali Beach Road, Bali, Douala",
+        neighborhood: "Bali", phone: "+237 677 88 90 12",
+        whatsapp: "+237677889012",
+        rating: 4.8, reviews: 198, price: "$$$", priceNum: 3, emoji: "🦐", color: "#2EC4B6",
+        tags: ["fruits de mer", "crevettes", "homard", "poisson", "bali", "vue rivière", "frais", "spécial"],
+        hours: "11:00 – 22:00", spicy: false, healthy: true,
+        delivery: false, takeaway: false, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Crevettes géantes grillées (500g)", p: 18000, h: true, desc: "Crevettes du Wouri, beurre ail & persil" },
+          { n: "Homard thermidor (entier)", p: 35000, h: false, desc: "Homard frais, sauce crémée, gratin fromage" },
+          { n: "Capitaine au four sauce citron", p: 14000, h: true, desc: "Entier, farci d'herbes, accompagné de riz créole" },
+          { n: "Plateau de fruits de mer", p: 45000, h: false, desc: "Crevettes, homard, huîtres & capitaine — pour 2" },
+          { n: "Soupe de poisson traditionnelle", p: 5000, h: true, desc: "Bouillon parfumé, légumes du marché" },
+          { n: "Vin blanc Muscadet (verre)", p: 3500, h: false, desc: "" },
+        ],
+        revs: [
+          { u: "Diane E.", t: "Les crevettes du Wouri sont incroyables ! Vue sur le fleuve magnifique.", s: 5 },
+          { u: "Robert A.", t: "Meilleur plateau de fruits de mer de la ville.", s: 5 },
+          { u: "Sylvie M.", t: "Un peu cher mais ça vaut chaque franc. Réservez à l'avance.", s: 4 },
+        ]
+      },
+      {
+        id: 4, name: "Saveur du Terroir", cuisine: "Cameroonian · Traditionnel", type: "Restaurant populaire",
+        lat: 4.0558, lng: 9.7445, address: "Marché Central, Deido, Douala",
+        neighborhood: "Deido", phone: "+237 654 32 10 98",
+        whatsapp: "+237654321098",
+        rating: 4.6, reviews: 567, price: "$", priceNum: 1, emoji: "🌿", color: "#52B788",
+        tags: ["cameroonian", "traditionnel", "ndolé", "koki", "achu", "economique", "local", "deido", "authentique"],
+        hours: "07:00 – 20:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 2],
+        menu: [
+          { n: "Ndolé complet (poisson + viande)", p: 3500, h: true, desc: "La référence — servi avec plantain ou riz" },
+          { n: "Koki de haricot", p: 2000, h: true, desc: "Haricots broyés, huile de palme, feuilles de bananier" },
+          { n: "Achu soup & taro", p: 3000, h: false, desc: "Taro pilé, sauce achu jaune traditionnelle" },
+          { n: "Beignets haricot (10pc)", p: 500, h: true, desc: "Croustillants, sauce piment fraîche" },
+          { n: "Bouillie de maïs (grande)", p: 700, h: false, desc: "Épaisse, sucrée, parfait au petit déjeuner" },
+          { n: "Jus de gingembre maison", p: 500, h: false, desc: "Fort et rafraîchissant" },
+        ],
+        revs: [
+          { u: "Claudette B.", t: "La vraie cuisine camerounaise de maman. Le ndolé est divin.", s: 5 },
+          { u: "Francis D.", t: "Très bon et pas cher. Idéal le midi.", s: 5 },
+          { u: "Martine O.", t: "La bouillie du matin est top pour commencer la journée.", s: 4 },
+        ]
+      },
+      {
+        id: 5, name: "Chez Maman Ngo", cuisine: "Street Food · Cameroonian", type: "Restaurant de quartier",
+        lat: 4.0680, lng: 9.7940, address: "Carrefour Elf, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 677 11 22 33",
+        whatsapp: "+237677112233",
+        rating: 4.4, reviews: 320, price: "$", priceNum: 1, emoji: "🍲", color: "#FFC14D",
+        tags: ["street food", "plantain", "haricot", "soya", "sanga", "local", "rapide", "bonapriso", "économique"],
+        hours: "06:30 – 22:00", spicy: true, healthy: false,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 3],
+        menu: [
+          { n: "Soya (brochettes de bœuf)", p: 1000, h: true, desc: "6 brochettes, épices maison, sauce moutarde-piment" },
+          { n: "Plantain sauté + haricot", p: 1500, h: false, desc: "Plantain doux sauté, haricot rouge bien cuit" },
+          { n: "Bâton de manioc (okok)", p: 800, h: true, desc: "Manioc fermenté enveloppé de feuilles — goût unique" },
+          { n: "Sanga (maïs + haricot grillé)", p: 1200, h: false, desc: "Snack populaire de Douala, croustillant" },
+          { n: "Porc au four & igname", p: 4500, h: false, desc: "Demi-côte de porc marinée, igname bouillie" },
+          { n: "Jus de bissap (hibiscus)", p: 400, h: false, desc: "Glacé, légèrement sucré" },
+        ],
+        revs: [
+          { u: "Aristide K.", t: "Maman Ngo fait le meilleur soya du quartier. Incontournable !", s: 5 },
+          { u: "Carine T.", t: "Rapide, bon et pas cher. Je viens presque tous les jours.", s: 4 },
+          { u: "Hervé N.", t: "Le plantain + haricot est une valeur sûre. Très généreux.", s: 4 },
+        ]
+      },
+      {
+        id: 6, name: "Restaurant du Fleuve", cuisine: "Continental · Cameroonian", type: "Restaurant-Hôtel",
+        lat: 4.0490, lng: 9.7020, address: "Boulevard de la Liberté, Akwa, Douala",
+        neighborhood: "Akwa", phone: "+237 233 42 60 00",
+        whatsapp: "+237233426000",
+        rating: 4.3, reviews: 145, price: "$$$$", priceNum: 4, emoji: "🥂", color: "#A78BFA",
+        tags: ["gastronomique", "continental", "vue fleuve", "hôtel", "buffet", "brunch", "akwa", "romantique", "affaires"],
+        hours: "06:30 – 23:00", spicy: false, healthy: true,
+        delivery: false, takeaway: false, reservations: true,
+        popular: [1, 3],
+        menu: [
+          { n: "Buffet petit-déjeuner", p: 8500, h: false, desc: "Fruits frais, viennoiseries, œufs, charcuterie — 6h30–10h" },
+          { n: "Entrecôte sauce poivre", p: 24000, h: false, desc: "250g, gratin dauphinois, légumes du marché" },
+          { n: "Salade niçoise revisitée", p: 7500, h: true, desc: "Thon local, œuf, olives, vinaigrette maison" },
+          { n: "Poulet fumé & risotto", p: 16000, h: false, desc: "Poitrine de poulet fumé, risotto truffe, parmesan" },
+          { n: "Crème brûlée à la vanille", p: 4500, h: false, desc: "Dessert signature de la maison" },
+          { n: "Cocktail Wouri Sunset", p: 6000, h: false, desc: "Rhum local, passion, lime, gingembre" },
+        ],
+        revs: [
+          { u: "Nadège F.", t: "Brunch exceptionnel et vue sur le fleuve. Parfait pour un anniversaire.", s: 5 },
+          { u: "Emmanuel B.", t: "Cadre luxueux, service impeccable. Un peu cher mais ça vaut.", s: 4 },
+        ]
+      },
+      {
+        id: 7, name: "Fast & Grill Akwa", cuisine: "Fast Food · Grillades", type: "Fast Food",
+        lat: 4.0634, lng: 9.7850, address: "Rue Joffre, Akwa, Douala",
+        neighborhood: "Akwa", phone: "+237 690 55 44 33",
+        whatsapp: "+237690554433",
+        rating: 4.2, reviews: 498, price: "$", priceNum: 1, emoji: "🍔", color: "#FF5533",
+        tags: ["fast food", "burger", "poulet frit", "frites", "rapide", "livraison", "akwa", "économique"],
+        hours: "09:00 – 01:00", spicy: false, healthy: false,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Burger Le Doualais", p: 3500, h: true, desc: "Steak local, cheddar, sauce piment douce, pain maison" },
+          { n: "Poulet frit (4 morceaux)", p: 4500, h: true, desc: "Croustillant à l'extérieur, tendre à l'intérieur" },
+          { n: "Frites maison (grande)", p: 1500, h: false, desc: "Fraîches, assaisonnées maison" },
+          { n: "Hot-dog sauce moutarde-piment", p: 2000, h: false, desc: "Pain grillé, saucisse locale, oignons caramélisés" },
+          { n: "Jus de goyave frais", p: 800, h: false, desc: "Pressé sur place" },
+          { n: "Milkshake chocolat", p: 2500, h: false, desc: "Crémeux, avec glace locale" },
+        ],
+        revs: [
+          { u: "Bryan M.", t: "Le meilleur burger fast-food de Douala ! Livraison rapide aussi.", s: 5 },
+          { u: "Félicité K.", t: "Poulet frit croustillant comme il faut. Open tard c'est pratique.", s: 4 },
+          { u: "Guy-Noël A.", t: "Rapport qualité-prix imbattable pour un repas rapide.", s: 4 },
+        ]
+      },
+      {
+        id: 8, name: "Le Libanais", cuisine: "Libanais · Méditerranéen", type: "Restaurant",
+        lat: 4.0600, lng: 9.7700, address: "Rue du Commerce, Bonanjo, Douala",
+        neighborhood: "Bonanjo", phone: "+237 233 43 21 00",
+        whatsapp: "+237233432100",
+        rating: 4.6, reviews: 231, price: "$$$", priceNum: 3, emoji: "🥙", color: "#E76F51",
+        tags: ["libanais", "shawarma", "falafel", "hummus", "halal", "méditerranéen", "bonanjo", "mezze"],
+        hours: "11:00 – 23:30", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Shawarma au poulet (grand)", p: 4000, h: true, desc: "Pain pita grillé, poulet mariné, légumes, sauce tahini" },
+          { n: "Plateau mezze (pour 2)", p: 14000, h: false, desc: "Hummus, taboulé, fattoush, falafel, pita chaud" },
+          { n: "Falafel wrap", p: 3000, h: true, desc: "Falafel croustillant, salade, sauce yaourt-ail" },
+          { n: "Kébab au bœuf (assiette)", p: 7500, h: false, desc: "Viande hachée épicée, riz pilaf, salade" },
+          { n: "Baklava maison (3pc)", p: 2000, h: false, desc: "Pâte filo, pistaches, miel — fait maison" },
+          { n: "Jus de citron à la menthe", p: 1200, h: false, desc: "Pressé sur place, très rafraîchissant" },
+        ],
+        revs: [
+          { u: "Nawal K.", t: "Authentique comme au Liban. Les mezzes sont généreux et savoureux.", s: 5 },
+          { u: "Christophe M.", t: "Le shawarma est excellent. Meilleur que ceux de ma ville natale !", s: 5 },
+          { u: "Sandra N.", t: "Livraison fiable et rapide. La qualité ne déçoit jamais.", s: 4 },
+        ]
+      },
+    ];
+
+    // ── STATE ─────────────────────────────────────────────────────────────────
+    let map = null;           // Leaflet map instance
+    let tileLayer = null;     // current tile layer (swapped on theme change)
+    let markers = {};
+    let activeTag = 'all', searchQ = '';
+    let selectedId = null, revStars = 5, userRevs = {}, liked = {};
+    let userMarker = null, aiMode = false, aiOpen = false;
+    let currentAiIds = [];
+    let currentUser = null;
+    let totalReviews = 0;
+    let currentView = 'map';
+    let currentTheme = 'dark';
+    let mapProvider = 'google';
+    let authToken = null;
+    let fetchedPlaceIds = new Set();
+
+    // ── PER-USER SESSION STORE ────────────────────────────────────────────────
+    // Each user's data is isolated by email key.
+    // Persisted to localStorage so data survives page refresh.
+    const USER_SESSIONS = {};
+
+    const DEFAULT_SESSION = () => ({
+      liked: {}, userRevs: {}, prefs: [],
+      notifs: { new: true, deals: true, reviews: false, ai: true, resa: true }
+    });
+
+    function getUserSession(email) {
+      if (USER_SESSIONS[email]) return USER_SESSIONS[email];
+      // Try to restore from localStorage first
+      try {
+        const stored = localStorage.getItem('fm_session_' + email);
+        if (stored) {
+          USER_SESSIONS[email] = JSON.parse(stored);
+          return USER_SESSIONS[email];
+        }
+      } catch (e) { }
+      USER_SESSIONS[email] = DEFAULT_SESSION();
+      return USER_SESSIONS[email];
+    }
+
+    function saveCurrentSession() {
+      if (!currentUser) return;
+      const session = {
+        liked: { ...liked },
+        userRevs: { ...userRevs },
+        prefs: [...document.querySelectorAll('.pref-tag.selected')].map(e => e.textContent.trim()),
+        notifs: {
+          new: !!document.getElementById('notif-new')?.classList.contains('on'),
+          deals: !!document.getElementById('notif-deals')?.classList.contains('on'),
+          reviews: !!document.getElementById('notif-reviews')?.classList.contains('on'),
+          ai: !!document.getElementById('notif-ai')?.classList.contains('on'),
+          resa: !!document.getElementById('notif-resa')?.classList.contains('on'),
+        }
+      };
+      USER_SESSIONS[currentUser.email] = session;
+      // Persist to localStorage so data survives page refresh
+      try {
+        localStorage.setItem('fm_session_' + currentUser.email, JSON.stringify(session));
+      } catch (e) { }
+    }
+
+    function restoreSession(email) {
+      const s = getUserSession(email);
+      liked = { ...s.liked };
+      userRevs = { ...s.userRevs };
+      setTimeout(() => {
+        ['new', 'deals', 'reviews', 'ai', 'resa'].forEach(k => {
+          const el = document.getElementById('notif-' + k);
+          if (el) el.classList.toggle('on', !!s.notifs[k]);
+        });
+        document.querySelectorAll('.pref-tag').forEach(el =>
+          el.classList.toggle('selected', s.prefs.includes(el.textContent.trim()))
+        );
+      }, 120);
+    }
+
+    // ── BACKEND API LAYER ─────────────────────────────────────────────────────
+    // Change baseUrl to your deployed server URL when going live.
+    // Local dev: 'http://localhost:3000/api'
+    const API = {
+      // Auto-detect environment: use localhost in dev, production URL when deployed
+      baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/api'
+        : '/api', // relative path — works on any production domain
+
+      async _fetch(path, options = {}) {
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+        try {
+          const res = await fetch(this.baseUrl + path, { ...options, headers });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'API error');
+          return data;
+        } catch (e) {
+          console.warn('[FoodMap API]', path, e.message);
+          // Return a safe fallback so the UI never crashes
+          return null;
+        }
+      },
+
+      login: (provider, cred) => API._fetch(provider === 'google' ? '/auth/google' : '/auth/login',
+        { method: 'POST', body: JSON.stringify(cred) }),
+
+      logout: () => API._fetch('/auth/logout', { method: 'POST' }),
+
+      getProfile: () => API._fetch('/profile'),
+
+      updateProfile: (u) => API._fetch('/profile', { method: 'PATCH', body: JSON.stringify(u) }),
+
+      getRestaurants: (f = {}) => API._fetch('/restaurants?' + new URLSearchParams(f).toString()),
+
+      getSaved: () => API._fetch('/saved'),
+
+      toggleSaved: (restaurantId, saved) => API._fetch(`/saved/${restaurantId}`,
+        { method: saved ? 'POST' : 'DELETE' }),
+
+      postReview: (restaurantId, review) => API._fetch(`/restaurants/${restaurantId}/reviews`,
+        { method: 'POST', body: JSON.stringify({ rating: review.s, text: review.t }) }),
+
+      savePrefs: (prefs) => API._fetch('/profile', { method: 'PATCH', body: JSON.stringify({ prefs }) }),
+
+      submitFeedback: (data) => API._fetch('/feedback', { method: 'POST', body: JSON.stringify(data) }),
+
+      submitPlace: (data) => API._fetch('/places/submit', { method: 'POST', body: JSON.stringify(data) }),
+
+      aiSearch: (query) => API._fetch('/ai/search', { method: 'POST', body: JSON.stringify({ query }) }),
+    };
+
+    // ── MAP INIT ──────────────────────────────────────────────────────────────
+    function initApp() {
+      if (typeof L === 'undefined') {
+        const loader = document.getElementById('loader');
+        if (loader) loader.innerHTML = `
+          <div style="text-align:center;padding:32px;max-width:300px">
+            <div style="font-size:48px;margin-bottom:16px">🗺️</div>
+            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:10px">Carte non chargée</div>
+            <div style="font-size:13px;color:#4E4E68;line-height:1.6;margin-bottom:20px">Vérifiez votre connexion et rechargez.</div>
+            <button onclick="location.reload()" style="background:#FF5533;border:none;border-radius:12px;padding:12px 24px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer">Réessayer</button>
+          </div>`;
+        setTimeout(() => { const l = document.getElementById('loader'); if (l) l.style.display = 'none'; }, 3000);
+        return;
+      }
+
+      // ── Leaflet map ────────────────────────────────────────────────────────
+      if (L.Browser.mobile) { document.documentElement.style.setProperty('--leaflet-zoom-duration', '0.1s'); }
+      map = L.map('map', { center: [4.061, 9.778], zoom: 13, zoomControl: true, attributionControl: false });
+
+      // CartoDB Dark Matter — free, no API key, looks great with dark theme
+      const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+      tileLayer = L.tileLayer(currentTheme === 'light' ? TILE_LIGHT : TILE_DARK, {
+        maxZoom: 19, subdomains: 'abcd', updateWhenIdle: true, keepBuffer: 2
+      }).addTo(map);
+
+      DATA.forEach(placeMarker);
+      map.on('click', () => { if (sheetState() === 'half' && !selectedId) showSheet('peek'); });
+
+      function syncTopbarSpacer() {
+        const tb = document.getElementById('topbar');
+        const sp = document.getElementById('topbar-spacer');
+        if (tb && sp && window.innerWidth < 600) sp.style.height = tb.offsetHeight + 'px';
+        else if (sp) sp.style.height = '0';
+      }
+      syncTopbarSpacer();
+      window.addEventListener('resize', syncTopbarSpacer);
+
+      setTimeout(() => {
+        const loader = document.getElementById('loader');
+        if (loader) loader.style.display = 'none';
+        showSheet('peek');
+        renderList();
+        setTimeout(() => { if (map) map.invalidateSize(); }, 420);
+        // Show Places fetch banner
+        setTimeout(() => {
+          const bar = document.getElementById('places-fetch-bar');
+          if (bar) bar.classList.remove('hidden');
+        }, 1800);
+        setTimeout(initGoogleSignIn, 800);
+      }, 1000);
+
+      const h = document.getElementById('drag-h');
+      let sy;
+      h.addEventListener('mousedown', e => { sy = e.clientY; });
+      h.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
+      document.addEventListener('mousemove', e => { if (sy === undefined) return; const d = e.clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('peek'); } });
+      document.addEventListener('mouseup', () => { sy = undefined; });
+      document.addEventListener('touchmove', e => { if (sy === undefined) return; const d = e.touches[0].clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('peek'); } }, { passive: true });
+      document.addEventListener('touchend', () => { sy = undefined; });
+    }
+
+    window.addEventListener('load', initApp);
+
+    // ── PLACE MARKER ON LEAFLET MAP ───────────────────────────────────────────
+    function placeMarker(r) {
+      if (!map) return;
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="food-marker" id="fm-${r.id}" style="background:${r.color}33;border-color:${r.color}">${r.emoji}</div>`,
+        iconSize: [46, 46], iconAnchor: [23, 23]
+      });
+      const m = L.marker([r.lat, r.lng], { icon }).addTo(map);
+      m.on('click', () => openDetail(r.id));
+      markers[r.id] = m;
+    }
+
+    // ── HIGHLIGHT MARKER ──────────────────────────────────────────────────────
+    function highlightMarker(activeId = null, aiIds = []) {
+      DATA.forEach(r => {
+        const el = document.getElementById(`fm-${r.id}`);
+        if (!el) return;
+        el.classList.remove('active', 'ai-highlight');
+        el.style.borderColor = r.color;
+        el.style.background = r.color + '33';
+        el.style.opacity = '1';
+        if (r.id === activeId) {
+          el.classList.add('active');
+          el.style.borderColor = '#fff';
+          el.style.background = r.color + '66';
+        } else if (aiIds.includes(r.id)) {
+          el.classList.add('ai-highlight');
+        }
+      });
+    }
+
+    // ── FETCH NEARBY RESTAURANTS (AI-powered, no API key needed) ─────────────
+    // Uses Claude AI to generate realistic restaurant data for Douala.
+    // When you get a Google Places API key, swap this body for a real
+    // PlacesService.nearbySearch() call — everything else stays the same.
+    async function fetchNearbyPlaces() {
+      const bar = document.getElementById('places-fetch-bar');
+      const loading = document.getElementById('places-loading');
+      if (bar) bar.classList.add('hidden');
+      if (loading) loading.classList.add('show');
+
+      const existingNames = DATA.map(r => r.name).join(', ');
+      const nextId = Math.max(...DATA.map(x => x.id)) + 1;
+
+      const prompt = `Tu es une base de données Google Places pour Douala, Cameroun. Génère 6 nouveaux restaurants réels ou réalistes à Douala qui n'existent PAS déjà dans cette liste: ${existingNames}.
+
+Retourne UNIQUEMENT du JSON valide (sans markdown) — un tableau de 6 objets:
+[
+  {
+    "id": ${nextId},
+    "name": "Nom du restaurant",
+    "cuisine": "Type · Sous-type",
+    "type": "Restaurant",
+    "lat": 4.XXXX,
+    "lng": 9.7XXX,
+    "address": "Adresse complète, Quartier, Douala",
+    "neighborhood": "Quartier",
+    "phone": "+237 6XX XX XX XX",
+    "whatsapp": "+2376XXXXXXXX",
+    "rating": 4.3,
+    "reviews": 187,
+    "price": "$$",
+    "priceNum": 2,
+    "emoji": "🍽️",
+    "color": "#E63946",
+    "tags": ["tag1","tag2","tag3"],
+    "hours": "11:00 – 23:00",
+    "spicy": false,
+    "healthy": false,
+    "delivery": true,
+    "takeaway": true,
+    "reservations": false,
+    "popular": [0, 1],
+    "menu": [
+      {"n": "Plat principal", "p": 5000, "h": true, "desc": "Description courte du plat"},
+      {"n": "Plat 2", "p": 3000, "h": false, "desc": "Description"},
+      {"n": "Entrée", "p": 2000, "h": true, "desc": "Description"},
+      {"n": "Dessert", "p": 1500, "h": false, "desc": "Description"},
+      {"n": "Boisson", "p": 800, "h": false, "desc": "Description"}
+    ],
+    "revs": [
+      {"u": "Prénom N.", "t": "Super restaurant, je recommande !", "s": 5},
+      {"u": "Prénom N.", "t": "Bon rapport qualité-prix.", "s": 4}
+    ]
+  }
+]
+
+Règles:
+- IDs: ${nextId} à ${nextId + 5} (incrémenter de 1)
+- Coordonnées réelles de Douala (lat 3.98–4.10, lng 9.67–9.82)
+- Quartiers variés: Bonanjo, Akwa, Bonapriso, Bali, Deido, Makepe, Logbessou, Kotto, Ndokoti
+- Cuisines variées: camerounais traditionnel, braisé maquis, libanais, chinois, sénégalais, fast-food local
+- Prix en FCFA réalistes (500–30000)
+- Couleurs hex vives et variées pour les markers`;
+
+      try {
+        const resp = await fetch(API.baseUrl + '/ai-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: prompt })
+        });
+
+        const data = await resp.json();
+        // Extract the result from the standard structure returned by our server proxy
+        const raw = data.content?.map(c => c.text || '').join('') || data.result || '';
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const newPlaces = JSON.parse(clean);
+
+        if (!Array.isArray(newPlaces)) throw new Error('Invalid response format');
+
+        let added = 0;
+        newPlaces.forEach(r => {
+          if (DATA.find(x => x.name.toLowerCase() === r.name.toLowerCase())) return;
+          if (!r.lat || !r.lng || !r.name) return;
+          r.id = Math.max(...DATA.map(x => x.id)) + 1;
+          DATA.push(r);
+          if (map) placeMarker(r);
+          added++;
+        });
+
+        if (loading) loading.classList.remove('show');
+        renderList();
+        toast(`✦ ${added} nouveaux restaurants ajoutés !`);
+
+        // Fit map bounds to show all markers
+        if (map && added > 0) {
+          const bounds = L.latLngBounds(DATA.map(r => [r.lat, r.lng]));
+          map.fitBounds(bounds, { padding: [60, 60] });
+        }
+
+        if (bar) {
+          bar.innerHTML = `<span style="color:var(--green)">✅</span><span>${added} restaurants ajoutés</span><button onclick="fetchNearbyPlaces()">Actualiser</button>`;
+          bar.classList.remove('hidden');
+        }
+
+      } catch (e) {
+        if (loading) loading.classList.remove('show');
+        if (bar) {
+          bar.innerHTML = `<span style="color:var(--accent)">⚠ Erreur réseau</span><button onclick="fetchNearbyPlaces()">Réessayer</button>`;
+          bar.classList.remove('hidden');
+        }
+        toast('⚠ Impossible de charger les restaurants.', true);
+        console.error('[FoodMap Places]', e);
+      }
+    }
+
+    // ── SET MAP PROVIDER (stub — kept for compatibility) ──────────────────────
+    function setMapProvider(p) {
+      // Single map now (Leaflet). No-op stub kept so old call sites don't throw.
+      if (map) map.invalidateSize();
+    }
+
+    // ── HTML ESCAPE HELPER — always use when inserting user data into innerHTML ──
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function debounce(fn, delay = 150) {
+      let t;
+      return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+    }
+
+    function highlightMarker(activeId = null, aiIds = []) {
+      DATA.forEach(r => {
+        const el = document.getElementById(`fm-${r.id}`);
+        if (!el) return;
+        el.classList.remove('active', 'ai-highlight');
+        el.style.borderColor = r.color;
+        el.style.background = r.color + '33';
+        el.style.opacity = '1';
+        if (r.id === activeId) { el.classList.add('active'); el.style.borderColor = '#fff'; el.style.background = r.color + '66'; }
+        else if (aiIds.includes(r.id)) { el.classList.add('ai-highlight'); }
+      });
+    }
+
+    function sheetState() { const s = document.getElementById('sheet'); return s.classList.contains('peek') ? 'peek' : s.classList.contains('half') ? 'half' : 'gone'; }
+    function showSheet(st) { document.getElementById('sheet').className = st; }
+
+    // ── NORMAL SEARCH / FILTER ────────────────────────────────────────────────
+    function onSearch() {
+      searchQ = document.getElementById('search-input').value;
+      aiMode = false;
+      document.getElementById('ai-mode-badge').style.display = 'none';
+      renderList();
+    }
+
+    function setTag(el) {
+      document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+      el.classList.add('active'); activeTag = el.dataset.tag;
+      aiMode = false; document.getElementById('ai-mode-badge').style.display = 'none';
+      renderList();
+    }
+
+    function renderList(overrideData = null, aiReasons = {}) {
+      const q = searchQ.toLowerCase();
+      const list = overrideData || DATA.filter(r => {
+        let tOk;
+        if (activeTag === 'all') tOk = true;
+        else if (activeTag === 'livraison') tOk = r.delivery;
+        else if (activeTag === 'économique') tOk = r.priceNum <= 1;
+        else tOk = r.tags.includes(activeTag);
+        const qOk = !q || r.name.toLowerCase().includes(q) || r.cuisine.toLowerCase().includes(q)
+          || r.tags.some(t => t.includes(q)) || r.menu.some(m => m.n.toLowerCase().includes(q));
+        return tOk && qOk;
+      });
+
+      document.getElementById('list-count').textContent = `${list.length} ${(LANGS[currentLang] || LANGS.fr).list_count_suffix}`;
+      const matchDish = r => q ? r.menu.find(m => m.n.toLowerCase().includes(q)) : null;
+      const starsH = s => '★'.repeat(Math.round(s)) + '☆'.repeat(5 - Math.round(s));
+      const fmtP = p => p >= 1000 ? (p >= 10000 ? (p / 1000).toFixed(0) + 'k' : (p / 1000).toFixed(1) + 'k') : p;
+
+      document.getElementById('rlist').innerHTML = list.length ? list.map(r => {
+        const md = matchDish(r);
+        const reason = aiReasons[r.id];
+        const popDish = r.menu[r.popular?.[0]] || r.menu[0];
+        return `<div class="rcard ${reason ? 'ai-card' : ''}" onclick="openDetail(${r.id})">
+      <div class="rcard-icon" style="background:${r.color}22">${r.emoji}</div>
+      <div class="rcard-info">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="rcard-name">${escHtml(r.name)}</div>
+          ${r.delivery ? '<span style="font-size:9px;background:rgba(52,211,153,.15);color:#34D399;border-radius:5px;padding:1px 5px;font-weight:700;flex-shrink:0">🛵 Livraison</span>' : ''}
+        </div>
+        <div class="rcard-sub">${escHtml(r.cuisine)} · <span style="color:var(--accent);font-weight:600">${escHtml(r.neighborhood)}</span></div>
+        ${reason ? `<div class="ai-reason">✦ ${escHtml(reason)}</div>` : ''}
+        ${md ? `<span class="match-dish" style="background:${r.color}18;color:${r.color}">🍽 ${escHtml(md.n)} — ${fmtP(md.p)} FCFA</span>` : ''}
+        <div class="rcard-foot">
+          <span><span class="stars">${starsH(r.rating)}</span> <span style="font-size:11px;color:var(--muted)">${r.rating} (${r.reviews})</span></span>
+          <span class="pill" style="background:${r.color}22;color:${r.color}">${r.price} · à partir de ${fmtP(r.menu[0].p)} FCFA</span>
+        </div>
+      </div>
+    </div>`;
+      }).join('') : `<div style="text-align:center;padding:38px 20px;color:var(--muted)">
+      <div style="font-size:36px;margin-bottom:10px">🍽️</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700">Aucun résultat${q ? ' pour &ldquo;' + escHtml(q) + '&rdquo;' : ''}</div>
+      <div style="font-size:12px;margin-top:6px">Essayez la recherche ✦ IA pour des suggestions</div>
+    </div>`;
+
+      DATA.forEach(r => {
+        const el = document.getElementById(`fm-${r.id}`);
+        if (!el) return;
+        const inList = list.find(x => x.id === r.id);
+        el.style.opacity = inList ? '1' : '0.2';
+      });
+    }
+
+    // ── AI SEARCH ─────────────────────────────────────────────────────────────
+    function toggleAI() {
+      aiOpen = !aiOpen;
+      document.getElementById('ai-bar').className = aiOpen ? 'open' : '';
+      if (aiOpen) document.getElementById('ai-input').focus();
+      else clearAI();
+      // Spacer must update since topbar height changed
+      setTimeout(() => {
+        const tb = document.getElementById('topbar');
+        const sp = document.getElementById('topbar-spacer');
+        if (tb && sp) sp.style.height = tb.offsetHeight + 'px';
+        if (currentView === 'map' && map) map.invalidateSize();
+      }, 50);
+    }
+
+    function aiChip(el) {
+      document.getElementById('ai-input').value = el.textContent;
+      runAI();
+    }
+
+    let aiLoading = false; // Fix #9: prevent duplicate concurrent requests
+
+    async function runAI() {
+      if (aiLoading) return; // already in flight — ignore
+      const q = document.getElementById('ai-input').value.trim();
+      if (!q) return;
+
+      aiLoading = true;
+      const sendBtn = document.getElementById('ai-send');
+      if (sendBtn) sendBtn.disabled = true;
+
+      const resEl = document.getElementById('ai-result');
+      const exEl = document.getElementById('ai-explanation');
+      const matchEl = document.getElementById('ai-matches');
+      resEl.classList.add('open');
+      exEl.innerHTML = `<div class="ai-thinking"><div class="thinking-dots"><span></span><span></span><span></span></div> Thinking about your request…</div>`;
+      matchEl.innerHTML = '';
+
+      const restaurantContext = DATA.map(r =>
+        `ID:${r.id} | ${r.name} | ${r.cuisine} | ${r.type} | Quartier:${r.neighborhood} | Prix:${r.price}(${r.priceNum}/4) | Note:${r.rating} | Épicé:${r.spicy} | Sain:${r.healthy} | Livraison:${r.delivery} | Tags:${r.tags.join(',')} | Horaires:${r.hours} | PrixMin:${Math.min(...r.menu.map(m => m.p))} FCFA | Menu:${r.menu.map(m => m.n + '(' + m.p + ' FCFA)').join(', ')}`
+      ).join('\n');
+
+      const systemPrompt = `Tu es un assistant intelligent de recommandation de restaurants pour l'application FoodMap Douala, Cameroun. Quand un utilisateur décrit ce qu'il cherche, analyse les restaurants disponibles et retourne les meilleures correspondances.
+
+Restaurants disponibles à Douala:
+${restaurantContext}
+
+Retourne UNIQUEMENT du JSON valide dans ce format exact, sans markdown, sans explication en dehors du JSON:
+{
+  "explanation": "Explication courte et conviviale en français (2 phrases max)",
+  "matches": [
+    { "id": 1, "reason": "raison courte et précise (max 10 mots)", "suggestedDish": "Nom du plat recommandé", "dishPrice": 5000 }
+  ]
+}
+
+Règles:
+- Retourne 1-3 meilleures correspondances seulement
+- Classe par pertinence à la demande
+- "reason" doit être spécifique et conversationnel en français
+- Tiens compte du prix en FCFA, de l'épicé, du sain, de la cuisine, du quartier, de la livraison
+- Si l'utilisateur dit "pas cher" ou "budget", préfère les restaurants $ ou $$
+- Si "livraison", filtre uniquement ceux avec livraison:true
+- Si "camerounais" ou "traditionnel", privilégie la cuisine camerounaise
+- Les prix sont en FCFA (Franc CFA)`;
+
+      try {
+        // ⚠️  FIX #1 — SECURITY: Never call api.anthropic.com directly from the browser.
+        // Your Anthropic API key would be visible to anyone using DevTools.
+        // Route through your own backend endpoint which holds the key server-side.
+        //
+        // PRODUCTION: replace the URL below with your real backend route, e.g.:
+        //   POST /api/ai-search  →  server calls Anthropic with your secret key
+        //
+        // Example Node/Express handler (server-side only):
+        //   app.post('/api/ai-search', async (req, res) => {
+        //     const { query, systemPrompt } = req.body;
+        //     const result = await fetch('https://api.anthropic.com/v1/messages', {
+        //       method:'POST',
+        //       headers:{'Content-Type':'application/json','x-api-key': process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},
+        //       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:systemPrompt, messages:[{role:'user',content:query}] })
+        //     });
+        //     res.json(await result.json());
+        //   });
+        const resp = await fetch(API.baseUrl + '/ai-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, systemPrompt })
+        });
+
+        const data = await resp.json();
+        // Backend should forward the Anthropic response shape, or adapt it.
+        const raw = data.content?.map(c => c.text || '').join('') || data.result || '';
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+
+        exEl.textContent = parsed.explanation;
+
+        const aiIds = parsed.matches.map(m => m.id);
+        const aiReasons = {};
+        parsed.matches.forEach(m => { aiReasons[m.id] = m.reason; });
+
+        matchEl.innerHTML = parsed.matches.map(m => {
+          const r = DATA.find(x => x.id === m.id);
+          if (!r) return '';
+          return `<div class="ai-match" onclick="openDetail(${r.id})">
+        <div class="am-emoji">${r.emoji}</div>
+        <div class="am-info">
+          <div class="am-name">${escHtml(r.name)}</div>
+          <div class="am-why">✦ ${escHtml(m.reason)}</div>
+          <div class="am-dish">🍽 ${escHtml(m.suggestedDish || '')} — ${m.dishPrice?.toLocaleString('fr-FR') || '–'} FCFA</div>
+        </div>
+        <div class="am-price" style="color:${r.color}">${r.price}</div>
+      </div>`;
+        }).join('');
+
+        aiMode = true;
+        currentAiIds = aiIds; // store for highlight restore when detail closes
+        const orderedResults = parsed.matches.map(m => DATA.find(x => x.id === m.id)).filter(Boolean);
+        document.getElementById('ai-mode-badge').style.display = 'block';
+        highlightMarker(null, aiIds);
+        renderList(orderedResults, aiReasons);
+        showSheet('peek');
+
+      } catch (e) {
+        // Fix #10: use the i18n system instead of a manual language chain
+        const L2 = LANGS[currentLang] || LANGS.fr;
+        const errMsg = L2.ai_error || "⚠ Impossible de contacter l'IA. Vérifiez votre connexion.";
+        exEl.innerHTML = `<span style="color:var(--accent)">${errMsg}</span>`;
+        matchEl.innerHTML = '';
+      } finally {
+        // Fix #9: always release the lock and re-enable the button
+        aiLoading = false;
+        const sendBtn = document.getElementById('ai-send');
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    }
+
+    function clearAI() {
+      document.getElementById('ai-result').classList.remove('open');
+      document.getElementById('ai-input').value = '';
+      aiMode = false;
+      document.getElementById('ai-mode-badge').style.display = 'none';
+      highlightMarker(null, []);
+      renderList();
+    }
+
+    // ── DETAIL ────────────────────────────────────────────────────────────────
+    function openDetail(id) {
+      selectedId = id;
+      const r = DATA.find(x => x.id === id);
+
+      if (map) {
+        map.flyTo([r.lat, r.lng], 16, { duration: .8 });
+        highlightMarker(id);
+      }
+
+      if (currentView === 'map') {
+        showSheet('half');
+      }
+
+      document.getElementById('det-like').textContent = liked[id] ? '❤️' : '🤍';
+
+      const st = s => '★'.repeat(s) + '☆'.repeat(5 - s);
+      const stH = s => '★'.repeat(Math.round(s)) + '☆'.repeat(5 - Math.round(s));
+      const allRevs = [...r.revs, ...(userRevs[id] || [])];
+      const fmtP = p => p.toLocaleString('fr-FR') + ' FCFA';
+      const popItems = (r.popular || [0]).map(i => r.menu[i]).filter(Boolean);
+
+      // Build banner gradient from restaurant color
+      const bannerGrad = `linear-gradient(135deg, ${r.color}44 0%, ${r.color}11 100%)`;
+
+      document.getElementById('det-scroll').innerHTML = `
+    <!-- Banner Hero -->
+    <div style="background:${bannerGrad};border-bottom:1px solid var(--border);padding:52px 20px 20px;position:relative;text-align:center">
+      <div style="font-size:62px;display:block;margin-bottom:10px;filter:drop-shadow(0 4px 12px ${r.color}66)">${r.emoji}</div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px">${escHtml(r.name)}</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${escHtml(r.cuisine)}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
+        <span style="background:${r.color}22;color:${r.color};border-radius:8px;padding:3px 10px;font-size:10px;font-weight:700">${escHtml(r.type)}</span>
+        <span style="background:rgba(255,190,61,.12);color:var(--gold);border-radius:8px;padding:3px 10px;font-size:10px;font-weight:700">📍 ${escHtml(r.neighborhood)}</span>
+        <span class="pill" style="background:${r.color}22;color:${r.color}">${r.price}</span>
+        ${r.spicy ? '<span class="pill" style="background:rgba(255,85,51,.15);color:#FF5533">🌶 Épicé</span>' : ''}
+        ${r.healthy ? '<span class="pill" style="background:rgba(52,211,153,.15);color:#34D399">🥗 Sain</span>' : ''}
+      </div>
+      <!-- Rating row -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px">
+        <span style="color:var(--gold);font-size:15px">${stH(r.rating)}</span>
+        <span style="color:var(--gold);font-weight:800;font-family:'Syne',sans-serif">${r.rating}</span>
+        <span style="color:var(--muted);font-size:11px">(${r.reviews} avis)</span>
+      </div>
+    </div>
+
+    <!-- Quick Action Buttons -->
+    <div style="display:grid;grid-template-columns:repeat(${r.phone ? 3 : 2},1fr);gap:8px;padding:14px 16px">
+      ${r.phone ? `<a href="tel:${r.phone}" style="text-decoration:none"><div style="background:var(--s1);border:1.5px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:3px">📞</div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);font-family:'Syne',sans-serif">Appeler</div>
+      </div></a>`: ''}
+      ${r.whatsapp ? `<a href="https://wa.me/${r.whatsapp.replace(/\D/g, '')}" target="_blank" style="text-decoration:none"><div style="background:var(--s1);border:1.5px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:3px">💬</div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);font-family:'Syne',sans-serif">WhatsApp</div>
+      </div></a>`: ''}
+      <a href="https://www.openstreetmap.org/directions?to=${r.lat},${r.lng}" target="_blank" style="text-decoration:none"><div style="background:${r.color};border:1.5px solid ${r.color};border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:3px">🧭</div>
+        <div style="font-size:10px;font-weight:700;color:#fff;font-family:'Syne',sans-serif">Itinéraire</div>
+      </div></a>
+    </div>
+
+    <!-- Info Grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 16px 4px">
+      <div class="ic"><div class="icl">📍 Adresse</div><div class="icv">${escHtml(r.address)}</div></div>
+      <div class="ic"><div class="icl">🕐 Horaires</div><div class="icv">${escHtml(r.hours)}</div></div>
+      <div class="ic"><div class="icl">🛵 Livraison</div><div class="icv" style="color:${r.delivery ? '#34D399' : 'var(--muted)'}">${r.delivery ? '✅ Disponible' : '❌ Non disponible'}</div></div>
+      <div class="ic"><div class="icl">📦 À emporter</div><div class="icv" style="color:${r.takeaway ? '#34D399' : 'var(--muted)'}">${r.takeaway ? '✅ Disponible' : '❌ Non disponible'}</div></div>
+    </div>
+
+    <!-- Tags -->
+    ${r.tags.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px 0">${r.tags.map(t => `<span style="font-size:10px;font-weight:700;border-radius:20px;padding:3px 10px;background:${r.color}18;color:${r.color}">${t}</span>`).join('')}</div>` : ''}
+
+    <!-- Popular Dishes -->
+    ${popItems.length ? `
+    <div class="sec" style="padding:16px 16px 9px">PLATS POPULAIRES ⭐</div>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none">
+      ${popItems.map(m => `<div style="flex-shrink:0;width:160px;background:${r.color}14;border:1.5px solid ${r.color}33;border-radius:14px;padding:12px">
+        <div style="font-size:22px;margin-bottom:6px">⭐</div>
+        <div style="font-size:12px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:3px">${escHtml(m.n)}</div>
+        <div style="font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:8px">${escHtml(m.desc || '')}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;color:${r.color};font-size:13px">${fmtP(m.p)}</div>
+      </div>`).join('')}
+    </div>`: ''}
+
+    <!-- Full Menu -->
+    <div class="sec" style="padding:16px 16px 9px">MENU COMPLET</div>
+    <div style="padding:0 16px">
+      ${r.menu.map((m, i) => `<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px;padding:12px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <div class="mn" style="flex:1">${(r.popular || []).includes(i) ? '<span class="hot-t">⭐ POP</span>' : ''}${m.h ? '<span class="hot-t">RECOMMANDÉ</span>' : ''} ${escHtml(m.n)}</div>
+          <div class="mp" style="color:${r.color};flex-shrink:0;margin-left:10px">${fmtP(m.p)}</div>
+        </div>
+        ${m.desc ? `<div style="font-size:11px;color:var(--muted);line-height:1.4">${escHtml(m.desc)}</div>` : ''}
+      </div>`).join('')}
+    </div>
+
+    <!-- Reviews -->
+    <div class="sec" style="padding:16px 16px 9px">AVIS (${allRevs.length})</div>
+    <div style="padding:0 16px" id="rev-list">
+      ${allRevs.map(rv => `<div class="rvc">
+        <div class="rvh">
+          <div class="av" style="background:${r.color}">${escHtml(rv.u[0])}</div>
+          <div>
+            <div style="font-weight:700;font-size:12px">${escHtml(rv.u)}</div>
+            <div style="color:var(--gold);font-size:11px">${st(rv.s)}</div>
+          </div>
+        </div>
+        <p>${escHtml(rv.t)}</p>
+      </div>`).join('')}
+    </div>
+
+    <!-- Leave a Review -->
+    <div class="sec" style="padding:16px 16px 9px">LAISSER UN AVIS</div>
+    <div style="padding:0 16px 16px">
+      <div class="srow" id="star-row"></div>
+      <div class="rinputw"><input id="rev-input" type="text" placeholder="Partagez votre expérience…"/><button class="pbtn" onclick="postReview()">Poster</button></div>
+    </div>
+  `;
+
+      revStars = 5; renderStars(r.color);
+      document.getElementById('list-view').classList.add('det-hidden');
+      document.getElementById('detail-view').classList.add('open');
+    }
+
+    function renderStars(c) {
+      document.getElementById('star-row').innerHTML = [1, 2, 3, 4, 5].map(s =>
+        `<button class="sb ${s <= revStars ? 'lit' : ''}" onclick="setStar(${s},'${c}')" style="${s <= revStars ? `filter:drop-shadow(0 0 4px ${c})` : ''}">⭐</button>`
+      ).join('');
+    }
+    function setStar(s, c) { revStars = s; renderStars(c); }
+
+    function postReview() {
+      const inp = document.getElementById('rev-input');
+      const t = inp.value.trim();
+      if (!t || !selectedId) return;
+      if (!userRevs[selectedId]) userRevs[selectedId] = [];
+      const r = DATA.find(x => x.id === selectedId);
+      const _L = LANGS[currentLang] || LANGS.fr;
+      const reviewerName = currentUser ? currentUser.name.split(' ')[0] : (currentLang === 'fr' ? 'Vous' : currentLang === 'ar' ? 'أنت' : currentLang === 'pidgin' ? 'You' : 'You');
+      const review = { u: reviewerName, t, s: revStars };
+      userRevs[selectedId].push(review);
+      totalReviews++;
+      inp.value = '';
+      const st = s => '★'.repeat(s) + '☆'.repeat(5 - s);
+      document.getElementById('rev-list').insertAdjacentHTML('beforeend',
+        `<div class="rvc"><div class="rvh"><div class="av" style="background:${r.color}">${escHtml(reviewerName[0])}</div><div><div style="font-weight:700;font-size:12px">${escHtml(reviewerName)}</div><div style="color:var(--gold);font-size:11px">${st(revStars)}</div></div></div><p>${escHtml(t)}</p></div>`);
+      updateStats();
+      toast('Avis publié ! ✅');
+      if (currentUser) {
+        API.postReview(selectedId, review);
+        saveCurrentSession();
+      }
+    }
+
+    let _prevNavContext = null; // track where detail was opened from
+
+    function closeDetail() {
+      selectedId = null;
+      document.getElementById('list-view').classList.remove('det-hidden');
+      document.getElementById('detail-view').classList.remove('open');
+      if (currentView === 'map') {
+        highlightMarker(null, aiMode ? currentAiIds : []);
+        if (map) map.flyTo([4.061, 9.778], 13, { duration: .7 });
+        showSheet('peek');
+      }
+      // If detail was opened from saved view, return to it
+      if (_prevNavContext === 'saved') {
+        _prevNavContext = null;
+        renderSavedView();
+        document.getElementById('saved-view').classList.add('open');
+        document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+        document.getElementById('nb-saved').classList.add('active');
+      } else {
+        _prevNavContext = null;
+      }
+    }
+
+    function toggleLike() {
+      if (!selectedId) return;
+      liked[selectedId] = !liked[selectedId];
+      document.getElementById('det-like').textContent = liked[selectedId] ? '❤️' : '🤍';
+      updateStats();
+      toast(liked[selectedId] ? '❤️ Sauvegardé !' : 'Retiré des favoris');
+      if (currentUser) {
+        API.toggleSaved(selectedId, liked[selectedId]);
+        saveCurrentSession();
+      }
+    }
+
+    // ── GEO + ADD ─────────────────────────────────────────────────────────────
+    function locateMe() {
+      if (!navigator.geolocation) { toast('Géolocalisation non supportée', true); return; }
+      navigator.geolocation.getCurrentPosition(p => {
+        const { latitude: lat, longitude: lng } = p.coords;
+        if (map) {
+          if (userMarker) map.removeLayer(userMarker);
+          userMarker = L.circleMarker([lat, lng], { radius: 9, fillColor: '#4A90FF', fillOpacity: 1, color: '#fff', weight: 3 }).addTo(map).bindPopup('📍 Vous').openPopup();
+          map.flyTo([lat, lng], 15, { duration: .9 });
+        }
+        toast('📍 Localisé !');
+      }, () => toast('Impossible d\'accéder à la position', true));
+    }
+
+    let gTimer, geoPreviewMarker = null;
+    function geocodePreview() {
+      clearTimeout(gTimer);
+      const v = document.getElementById('add-addr').value;
+      if (v.length < 6) { document.getElementById('geo-ok').style.display = 'none'; return; }
+      gTimer = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&limit=1`)
+          .then(r => r.json()).then(d => {
+            if (d.length) {
+              document.getElementById('geo-ok').style.display = 'block';
+              if (map) {
+                map.flyTo([parseFloat(d[0].lat), parseFloat(d[0].lon)], 16, { duration: .8 });
+                if (geoPreviewMarker) map.removeLayer(geoPreviewMarker);
+                geoPreviewMarker = L.circleMarker([parseFloat(d[0].lat), parseFloat(d[0].lon)], { radius: 8, fillColor: 'var(--accent)', fillOpacity: .9, color: '#fff', weight: 2 }).addTo(map);
+              }
+            } else { document.getElementById('geo-ok').style.display = 'none'; }
+          }).catch(() => { });
+      }, 700);
+    }
+
+    function openAdd() { document.getElementById('add-view').classList.add('open'); }
+    function closeAdd() { document.getElementById('add-view').classList.remove('open'); }
+    function fakeUpload(m) { toast(m); }
+    function submitPlace() {
+      const name = document.getElementById('add-name')?.value?.trim();
+      if (!name) { toast('Nom du restaurant requis', true); return; }
+      const formData = {
+        name: name,
+        cuisine: document.getElementById('add-cuisine')?.value || '',
+        address: document.getElementById('add-addr')?.value || '',
+        hours: document.getElementById('add-hours')?.value || '',
+        phone: document.getElementById('add-phone')?.value || '',
+        price: document.getElementById('add-price')?.value || '',
+      };
+      API.submitPlace(formData); // posts to backend when live
+      toast('🎉 Soumis ! Examen sous 24h');
+      setTimeout(closeAdd, 900);
+    }
+
+    // ── NAVIGATION ────────────────────────────────────────────────────────────
+    function navTo(t) {
+      document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+      document.getElementById('nb-' + t)?.classList.add('active');
+
+      // Hide all full-screen views first
+      document.getElementById('saved-view').classList.remove('open');
+      document.getElementById('profile-view').classList.remove('open');
+
+      if (t === 'map') {
+        // nothing extra needed
+      } else if (t === 'saved') {
+        renderSavedView();
+        document.getElementById('saved-view').classList.add('open');
+      } else if (t === 'profile') {
+        renderProfileView();
+        document.getElementById('profile-view').classList.add('open');
+      }
+    }
+
+    function closePage(t) {
+      document.getElementById(t + '-view').classList.remove('open');
+      document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+      document.getElementById('nb-map').classList.add('active');
+    }
+
+    // ── SAVED VIEW ────────────────────────────────────────────────────────────
+    function renderSavedView() {
+      const savedIds = Object.keys(liked).filter(id => liked[id]).map(Number);
+      const content = document.getElementById('saved-content');
+      if (savedIds.length === 0) {
+        content.innerHTML = `<div class="empty-state">
+      <div class="es-icon">❤️</div>
+      <h3>Aucun favori pour l'instant</h3>
+      <p>Ouvrez un restaurant et appuyez sur le ♥ pour le sauvegarder.</p>
+    </div>`;
+        return;
+      }
+      const starsH = s => '★'.repeat(Math.round(s)) + '☆'.repeat(5 - Math.round(s));
+      // Consistent with renderList: show one decimal for values < 10k (e.g. 7.5k), integer for ≥ 10k
+      const fmtP = p => p >= 1000 ? (p >= 10000 ? (p / 1000).toFixed(0) + 'k' : (p / 1000).toFixed(1) + 'k') : p;
+      content.innerHTML = savedIds.map(id => {
+        const r = DATA.find(x => x.id === id);
+        if (!r) return '';
+        return `<div class="rcard" onclick="openDetail(${r.id});closePage('saved')" style="margin-bottom:9px">
+      <div class="rcard-icon" style="background:${r.color}22">${r.emoji}</div>
+      <div class="rcard-info">
+        <div class="rcard-name">${escHtml(r.name)}</div>
+        <div class="rcard-sub">${escHtml(r.cuisine)} · <span style="color:var(--accent);font-weight:600">${escHtml(r.neighborhood)}</span> · ${escHtml(r.hours)}</div>
+        <div class="rcard-foot">
+          <span><span class="stars">${starsH(r.rating)}</span> <span style="font-size:11px;color:var(--muted)">${r.rating}</span></span>
+          <span class="pill" style="background:${r.color}22;color:${r.color}">${escHtml(r.price)} · dès ${fmtP(r.menu[0].p)} FCFA</span>
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();unsave(${r.id})" style="background:none;border:none;font-size:18px;cursor:pointer;opacity:.6;padding:4px">🗑</button>
+    </div>`;
+      }).join('');
+    }
+
+    function unsave(id) {
+      liked[id] = false;
+      updateStats();
+      renderSavedView();
+      toast('Retiré des favoris');
+    }
+
+    function openSavedDetail(id) {
+      _prevNavContext = 'saved';
+      document.getElementById('saved-view').classList.remove('open');
+      document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+      document.getElementById('nb-map').classList.add('active');
+      openDetail(id);
+    }
+
+    // ── PROFILE VIEW ──────────────────────────────────────────────────────────
+    function renderProfileView() {
+      const loggedIn = !!currentUser;
+      document.getElementById('login-screen').style.display = loggedIn ? 'none' : 'flex';
+      document.getElementById('logged-profile').style.display = loggedIn ? 'block' : 'none';
+      if (loggedIn) {
+        document.getElementById('profile-name-el').textContent = currentUser.name;
+        document.getElementById('profile-email-el').textContent = currentUser.email;
+        const avatarEl = document.getElementById('profile-avatar-el');
+        if (currentUser.photo) {
+          avatarEl.innerHTML = `<img src="${currentUser.photo}" alt="avatar" onerror="this.parentElement.textContent='😋'"/>`;
+        } else {
+          avatarEl.textContent = currentUser.name[0];
+        }
+        updateStats();
+      }
+    }
+
+    function updateStats() {
+      const savedCount = Object.values(liked).filter(Boolean).length;
+      const reviewCount = Object.values(userRevs).reduce((a, v) => a + v.length, 0);
+      document.getElementById('stat-saved').textContent = savedCount;
+      document.getElementById('stat-reviews').textContent = reviewCount;
+      const visitedCount = Object.keys(liked).filter(id => liked[id] || (userRevs[id] && userRevs[id].length > 0)).length;
+      document.getElementById('stat-visited').textContent = visitedCount;
+    }
+
+    // ── AUTH ───────────────────────────────────────────────────────────────────
+    // Replace YOUR_GOOGLE_CLIENT_ID below with your actual Google OAuth Client ID
+    // Get one free at: https://console.cloud.google.com/apis/credentials
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+    let emailSignupMode = false;
+    let emailFormVisible = false;
+
+    // Initialize Google Identity Services once script loads
+    function initGoogleSignIn() {
+      if (typeof google === 'undefined' || !google.accounts) return;
+      if (GOOGLE_CLIENT_ID.startsWith('YOUR_')) return; // placeholder — skip init
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: onGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+    }
+
+    // Called when Google returns a credential (JWT)
+    function onGoogleCredential(response) {
+      try {
+        // Decode the JWT payload (no signature verification needed client-side)
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        currentUser = {
+          name: payload.name || payload.given_name || 'User',
+          email: payload.email,
+          photo: payload.picture || null,
+          provider: 'google'
+        };
+        finishLogin();
+      } catch (e) {
+        toast('Erreur de connexion Google', true);
+      }
+    }
+
+    async function handleGoogleLogin() {
+      // If a real Google Client ID is configured, use the native GIS flow
+      if (typeof google !== 'undefined' && google.accounts && !GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+        google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            google.accounts.oauth2.initTokenClient({
+              client_id: GOOGLE_CLIENT_ID,
+              scope: 'profile email',
+              callback: (tokenResponse) => {
+                if (tokenResponse.access_token) {
+                  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+                  })
+                    .then(r => r.json())
+                    .then(profile => {
+                      currentUser = {
+                        name: profile.name || profile.given_name || 'User',
+                        email: profile.email,
+                        photo: profile.picture || null,
+                        provider: 'google'
+                      };
+                      finishLogin();
+                    })
+                    .catch(() => toast('Erreur Google — réessayez', true));
+                }
+              }
+            }).requestAccessToken();
+          }
+        });
+        return;
+      }
+
+      // No real Client ID — open the realistic Google account picker modal
+      openGoogleModal();
+    }
+
+    // ── GOOGLE ACCOUNT PICKER MODAL LOGIC ─────────────────────────────────────
+    let gmCurrentStep = 'picker'; // 'picker' | 'email' | 'password'
+    let gmEnteredEmail = '';
+
+    function openGoogleModal() {
+      // Fix #2 — SECURITY GUARD: This modal is a UI demo only.
+      // If a real Google Client ID has been configured, NEVER show this fake picker —
+      // the real GIS flow (google.accounts.id.prompt) should have already been used.
+      if (!GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+        console.warn('[FoodMap] openGoogleModal() called in production — blocked. Use real GIS flow.');
+        return;
+      }
+      // Pre-fill the "saved account" slot with a plausible local email if available
+      const savedEmail = localStorage.getItem('fm_last_google_email') || 'utilisateur@gmail.com';
+      const savedName = localStorage.getItem('fm_last_google_name') || 'Mon compte Google';
+      document.getElementById('gm-saved-email').textContent = savedEmail;
+      document.getElementById('gm-saved-name').textContent = savedName;
+
+      // Reset to picker step
+      gmShowStep('picker');
+      document.getElementById('google-modal-overlay').classList.add('open');
+    }
+
+    function closeGoogleModal(e) {
+      // Close only when clicking the dark overlay, not the modal itself
+      if (e && e.target !== document.getElementById('google-modal-overlay')) return;
+      document.getElementById('google-modal-overlay').classList.remove('open');
+      gmReset();
+    }
+
+    function gmReset() {
+      document.getElementById('gm-email-input').value = '';
+      document.getElementById('gm-pw-input').value = '';
+      document.getElementById('gm-email-error').style.display = 'none';
+      document.getElementById('gm-pw-error').style.display = 'none';
+      document.getElementById('gm-email-next').disabled = true;
+    }
+
+    function gmShowStep(step) {
+      gmCurrentStep = step;
+      document.getElementById('gm-step-picker').style.display = step === 'picker' ? 'block' : 'none';
+      document.getElementById('gm-step-email').style.display = step === 'email' ? 'block' : 'none';
+      document.getElementById('gm-step-password').style.display = step === 'password' ? 'block' : 'none';
+      document.getElementById('gm-back-btn').style.display = step !== 'picker' ? 'inline' : 'none';
+    }
+
+    function gmBack() {
+      if (gmCurrentStep === 'password') gmShowStep('email');
+      else gmShowStep('picker');
+    }
+
+    function gmShowEmailStep(createMode) {
+      gmShowStep('email');
+      // Update section label and button text based on mode
+      const label = document.querySelector('#gm-step-email .gm-section-label');
+      const nextBtn = document.getElementById('gm-email-next');
+      if (createMode) {
+        if (label) label.textContent = 'Créer un compte';
+        if (nextBtn) nextBtn.textContent = 'Suivant';
+      } else {
+        if (label) label.textContent = 'Connexion';
+        if (nextBtn) nextBtn.textContent = 'Suivant';
+      }
+      setTimeout(() => document.getElementById('gm-email-input').focus(), 60);
+    }
+
+    function gmValidateEmail() {
+      const val = document.getElementById('gm-email-input').value.trim();
+      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      document.getElementById('gm-email-next').disabled = !valid;
+      document.getElementById('gm-email-error').style.display = 'none';
+    }
+
+    function gmNextFromEmail() {
+      const email = document.getElementById('gm-email-input').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        const err = document.getElementById('gm-email-error');
+        err.textContent = 'Adresse e-mail invalide. Réessayez.';
+        err.style.display = 'block';
+        return;
+      }
+      gmEnteredEmail = email;
+      document.getElementById('gm-pw-email-display').textContent = email;
+      gmShowStep('password');
+      setTimeout(() => document.getElementById('gm-pw-input').focus(), 60);
+    }
+
+    function gmTogglePw() {
+      const inp = document.getElementById('gm-pw-input');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function gmForgotPw() {
+      toast('🔗 Lien de réinitialisation envoyé à ' + gmEnteredEmail);
+    }
+
+    // User clicked a saved account — ask for password to confirm identity
+    function gmSelectSavedAccount() {
+      gmEnteredEmail = document.getElementById('gm-saved-email').textContent;
+      document.getElementById('gm-pw-email-display').textContent = gmEnteredEmail;
+      gmShowStep('password');
+      setTimeout(() => document.getElementById('gm-pw-input').focus(), 60);
+    }
+
+    async function gmSubmitPassword() {
+      const pw = document.getElementById('gm-pw-input').value;
+      const errEl = document.getElementById('gm-pw-error');
+      const btn = document.getElementById('gm-pw-next');
+
+      if (!pw || pw.length < 6) {
+        errEl.textContent = 'Mot de passe incorrect. Réessayez.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      // Show loading state
+      btn.innerHTML = '<span class="gm-spinner"></span> Connexion en cours…';
+      btn.disabled = true;
+      errEl.style.display = 'none';
+
+      // Simulate network auth delay (realistic)
+      await new Promise(r => setTimeout(r, 1600));
+
+      // Derive a display name from the email
+      const emailParts = gmEnteredEmail.split('@')[0];
+      const displayName = emailParts
+        .replace(/[._\-]/g, ' ')
+        .replace(/\w/g, c => c.toUpperCase());
+
+      // Persist for next time (so the "saved account" shows their email)
+      try {
+        localStorage.setItem('fm_last_google_email', gmEnteredEmail);
+        localStorage.setItem('fm_last_google_name', displayName);
+      } catch (e) { }
+
+      currentUser = {
+        name: displayName || 'Utilisateur',
+        email: gmEnteredEmail,
+        photo: null,
+        provider: 'google'
+      };
+
+      // Close modal and finish login
+      document.getElementById('google-modal-overlay').classList.remove('open');
+      btn.innerHTML = 'Se connecter';
+      btn.disabled = false;
+      gmReset();
+      finishLogin();
+    }
+
+    function toggleEmailForm() {
+      emailFormVisible = !emailFormVisible;
+      const wrapper = document.getElementById('email-form-wrapper');
+      const toggleBtn = document.getElementById('email-toggle-text');
+      const L = LANGS[currentLang] || LANGS.fr;
+      wrapper.style.display = emailFormVisible ? 'block' : 'none';
+      toggleBtn.textContent = emailFormVisible
+        ? (L.hide_email || '✕ Masquer')
+        : (L.email_cta || '✉️ Continuer avec e-mail');
+      if (emailFormVisible) document.getElementById('login-email').focus();
+    }
+
+    function toggleSignupMode() {
+      emailSignupMode = !emailSignupMode;
+      const L = LANGS[currentLang] || LANGS.fr;
+      document.getElementById('email-btn-label').textContent = emailSignupMode
+        ? (L.create_account || 'Créer un compte')
+        : (L.sign_in || 'Se connecter');
+      document.getElementById('toggle-signup-link').textContent = emailSignupMode
+        ? (L.have_account || 'J\'ai déjà un compte')
+        : (L.create_account || 'Créer un compte');
+      document.getElementById('login-error').style.display = 'none';
+    }
+
+    function togglePasswordVisibility() {
+      const pw = document.getElementById('login-password');
+      const eye = document.getElementById('pw-eye');
+      if (pw.type === 'password') { pw.type = 'text'; eye.textContent = '🙈'; }
+      else { pw.type = 'password'; eye.textContent = '👁'; }
+    }
+
+    async function handleEmailLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+      const btn = document.getElementById('email-submit-btn');
+      const L = LANGS[currentLang] || LANGS.fr;
+
+      errEl.style.display = 'none';
+
+      // Basic validation
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errEl.textContent = L.err_invalid_email || 'Adresse e-mail invalide.';
+        errEl.style.display = 'block'; return;
+      }
+      if (!password || password.length < 6) {
+        errEl.textContent = L.err_short_password || 'Le mot de passe doit contenir au moins 6 caractères.';
+        errEl.style.display = 'block'; return;
+      }
+
+      btn.classList.add('loading');
+      document.getElementById('email-btn-label').textContent = L.signing_in || 'Connexion…';
+
+      // Simulate async auth (replace with real backend call)
+      await new Promise(r => setTimeout(r, 1200));
+
+      // In a real app: POST to your auth endpoint or use Firebase/Supabase
+      // For demo: accept any valid-format credentials
+      const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      currentUser = {
+        name: name,
+        email: email,
+        photo: null,
+        provider: 'email'
+      };
+
+      btn.classList.remove('loading');
+      finishLogin();
+    }
+
+    function showForgotPassword() {
+      const email = document.getElementById('login-email').value.trim();
+      const L = LANGS[currentLang] || LANGS.fr;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast(L.err_enter_email || 'Entrez d\'abord votre e-mail', true);
+        document.getElementById('login-email').focus(); return;
+      }
+      toast('📧 ' + (L.reset_sent || 'Lien de réinitialisation envoyé à') + ' ' + email);
+    }
+
+    function finishLogin() {
+      restoreSession(currentUser.email);
+      renderProfileView();
+      const L = LANGS[currentLang] || LANGS.fr;
+      toast('✅ ' + (L.welcome || 'Bienvenue') + ' — ' + currentUser.name);
+      // Initialize GIS after login page is shown again on logout
+      setTimeout(initGoogleSignIn, 500);
+    }
+
+    function skipLogin() {
+      document.getElementById('profile-view').classList.remove('open');
+      document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+      document.getElementById('nb-map').classList.add('active');
+      const L = LANGS[currentLang] || LANGS.fr;
+      toast(L.guest_mode || 'Navigation en mode invité');
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      // Clear persisted Google email on explicit logout
+      try {
+        localStorage.removeItem('fm_last_google_email');
+        localStorage.removeItem('fm_last_google_name');
+        // Clear session data on logout (optional: remove if you want data to persist after re-login)
+        // localStorage.removeItem('fm_session_' + loggedOutEmail);
+      } catch (e) { }
+      // Reset email form state
+      emailFormVisible = false;
+      emailSignupMode = false;
+      document.getElementById('email-form-wrapper').style.display = 'none';
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+      const L = LANGS[currentLang] || LANGS.fr;
+      toast(L.signed_out || 'Déconnecté');
+      renderProfileView();
+      // Sign out of Google silently
+      if (typeof google !== 'undefined' && google.accounts && !GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+        google.accounts.id.disableAutoSelect();
+      }
+    }
+
+    function togglePref(el) {
+      el.classList.toggle('selected');
+      const prefs = [...document.querySelectorAll('.pref-tag.selected')].map(e => e.textContent.trim());
+      if (prefs.length > 0) toast('Préférences sauvegardées ✦');
+      if (currentUser) saveCurrentSession();
+    }
+
+    // ── VIEW TOGGLE (Map / List) ───────────────────────────────────────────────
+    function setView(v) {
+      currentView = v;
+      const mapSection = document.getElementById('map-section');
+      const sheet = document.getElementById('sheet');
+      const hero = document.getElementById('hero-banner');
+      const btnMap = document.getElementById('btn-map');
+      const btnList = document.getElementById('btn-list');
+      const isWide = window.innerWidth >= 600;
+
+      if (v === 'map') {
+        mapSection.classList.remove('hidden');
+        sheet.classList.remove('list-mode');
+        if (hero) hero.classList.remove('hidden');
+        showSheet('peek');
+        btnMap.classList.add('active');
+        btnList.classList.remove('active');
+        setTimeout(() => { if (map) map.invalidateSize(); }, 380);
+      } else {
+        if (!isWide) {
+          mapSection.classList.add('hidden');
+          if (hero) hero.classList.add('hidden');
+        }
+        sheet.classList.add('list-mode');
+        btnList.classList.add('active');
+        btnMap.classList.remove('active');
+        if (selectedId) closeDetail();
+      }
+    }
+
+    // ── THEME SWITCHER ─────────────────────────────────────────────────────────
+    const THEME_NAMES = { dark: 'Dark', light: 'Light', sunset: 'Sunset', forest: 'Forest', neon: 'Neon' };
+
+    function applyTheme(theme, dotEl) {
+      currentTheme = theme;
+      if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', theme);
+
+      // Update all theme dots across the page
+      document.querySelectorAll('.tdot').forEach(d => {
+        d.classList.toggle('active', d.dataset.themeVal === theme);
+      });
+
+      const label = document.getElementById('theme-name-label');
+      if (label) label.textContent = THEME_NAMES[theme] || theme;
+
+      // Swap Leaflet tile layer to match light/dark theme
+      if (map && tileLayer) {
+        map.removeLayer(tileLayer);
+        const url = theme === 'light'
+          ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        tileLayer = L.tileLayer(url, { maxZoom: 19, subdomains: 'abcd', keepBuffer: 2 }).addTo(map);
+      }
+
+      toast('🎨 ' + THEME_NAMES[theme] + ' theme');
+    }
+
+    // ── PROFILE SUB-PAGES ─────────────────────────────────────────────────────
+    function openSubPage(name) {
+      // Populate activity dynamically
+      if (name === 'activity') renderActivityPage();
+      document.getElementById('page-' + name).classList.add('open');
+    }
+
+    function closeSubPage(name) {
+      document.getElementById('page-' + name).classList.remove('open');
+    }
+
+    function renderActivityPage() {
+      const body = document.getElementById('activity-body');
+      const visited = DATA.filter(r => liked[r.id] || (userRevs[r.id] && userRevs[r.id].length > 0));
+
+      if (visited.length === 0) {
+        body.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:14px">🗺️</div>
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px">Aucune activité</div>
+      <div style="font-size:13px;line-height:1.6">Explorez des restaurants et laissez des avis pour voir votre historique ici.</div>
+    </div>`;
+        return;
+      }
+
+      const starsH = s => '★'.repeat(Math.round(s)) + '☆'.repeat(5 - Math.round(s));
+      body.innerHTML = visited.map(r => {
+        const myRevs = userRevs[r.id] || [];
+        const isSaved = liked[r.id];
+        const lastRev = myRevs[myRevs.length - 1];
+        return `<div class="activity-item" onclick="openDetailFromActivity(${r.id})">
+      <div class="act-emoji" style="background:${r.color}22">${r.emoji}</div>
+      <div class="act-info">
+        <div class="act-name">${escHtml(r.name)}</div>
+        <div class="act-meta">${escHtml(r.neighborhood)} · ${escHtml(r.cuisine)}</div>
+        ${lastRev ? `<div class="act-meta" style="color:var(--gold)">${starsH(lastRev.s)} &nbsp;&ldquo;${escHtml(lastRev.t.substring(0, 40))}${lastRev.t.length > 40 ? '…' : ''}&rdquo;</div>` : ''}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${isSaved ? '<span class="act-badge" style="background:rgba(255,85,51,.12);color:var(--accent)">❤️ Sauvegardé</span>' : ''}
+          ${myRevs.length ? `<span class="act-badge" style="background:rgba(255,190,61,.12);color:var(--gold)">⭐ ${myRevs.length} avis</span>` : ''}
+        </div>
+      </div>
+      <span style="color:var(--muted);font-size:14px">›</span>
+    </div>`;
+      }).join('');
+    }
+
+    function openDetailFromActivity(id) {
+      closeSubPage('activity');
+      // Close profile view and go back to map
+      document.getElementById('profile-view').classList.remove('open');
+      document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+      document.getElementById('nb-map').classList.add('active');
+      openDetail(id);
+    }
+
+    function toggleNotif(el) {
+      el.classList.toggle('on');
+      toast(el.classList.contains('on') ? '🔔 Notification activée' : '🔕 Notification désactivée');
+    }
+
+    let feedbackRating = 3;
+    function setFeedbackStar(n) {
+      feedbackRating = n;
+      document.querySelectorAll('.rating-star').forEach((s, i) => {
+        s.classList.toggle('lit', i < n);
+      });
+    }
+
+    function submitFeedback() {
+      const text = document.getElementById('feedback-text').value.trim();
+      const cat = document.getElementById('feedback-cat').value;
+      if (!text) { toast('Veuillez écrire un message', true); return; }
+      API.submitFeedback({ rating: feedbackRating, category: cat, text });
+      document.getElementById('feedback-text').value = '';
+      closeSubPage('feedback');
+      toast('💬 Merci pour votre retour !');
+    }
+
+    // ── LANGUAGE / i18n SYSTEM ────────────────────────────────────────────────
+    let currentLang = 'fr';
+
+    const LANGS = {
+      fr: {
+        name: 'Français', flag: '🇫🇷',
+        search_placeholder: 'Rechercher plat, cuisine, restaurant…',
+        ai_label: 'Recherche IA',
+        ai_title: 'RECOMMANDATIONS IA',
+        ai_mode: '✦ MODE IA',
+        btn_map: '🗺 Carte', btn_list: '📋 Liste',
+        tag_all: 'Tous',
+        nav_explore: 'Explorer', nav_saved: 'Sauvés', nav_add: 'Ajouter', nav_profile: 'Profil',
+        list_count_suffix: 'RESTAURANT(S) À DOUALA',
+        hero_sub: 'Découvrez les meilleurs restaurants',
+        lang_region: 'Langue & Région',
+        lang_sub: 'Français · Douala, CM 🇨🇲',
+        lang_desc: 'Choisissez votre langue d\'interface.',
+        lang_header: 'Langue & Région',
+        toast_lang: '🌍 Langue changée : Français',
+        prefs_title: 'Préférences culinaires',
+        appear_title: 'Apparence',
+        account_title: 'Compte',
+        activity: 'Activité récente', notifs: 'Notifications', feedback_menu: 'Envoyer un avis',
+        logout: 'Se déconnecter',
+        ai_chips: ["Quelque chose d'épicé et pas cher", "Cuisine camerounaise authentique", "Livraison disponible maintenant", "Fruits de mer frais", "Sortir en groupe ce soir", "Repas sous 5000 FCFA"],
+        ai_input_placeholder: 'ex: "quelque chose de chaud et réconfortant"…',
+        // Auth
+        login_tagline: 'Sauvegardez vos favoris, suivez vos avis\net obtenez de meilleures recommandations.',
+        perk1: 'Sauvegardez vos restaurants sur tous vos appareils',
+        perk2: "L'IA apprend vos goûts culinaires",
+        perk3: 'Suivez vos avis et vos notes',
+        login_card_title: 'Connexion à FoodMap',
+        login_card_sub: 'Vos favoris et préférences synchronisés sur tous vos appareils.',
+        google_btn: 'Continuer avec Google',
+        email_cta: '✉️ Continuer avec e-mail',
+        hide_email: '✕ Masquer',
+        or: 'ou',
+        skip: 'Continuer sans se connecter',
+        sign_in: 'Se connecter',
+        create_account: 'Créer un compte',
+        have_account: "J'ai déjà un compte",
+        forgot_pw: 'Mot de passe oublié ?',
+        signing_in: 'Connexion…',
+        welcome: 'Bienvenue',
+        signed_out: 'Déconnecté',
+        guest_mode: 'Navigation en mode invité',
+        err_invalid_email: 'Adresse e-mail invalide.',
+        err_short_password: 'Le mot de passe doit contenir au moins 6 caractères.',
+        err_enter_email: "Entrez d'abord votre e-mail",
+        reset_sent: 'Lien de réinitialisation envoyé à',
+        ai_error: "⚠ Impossible de contacter l'IA. Vérifiez votre connexion.",
+      },
+      en: {
+        name: 'English', flag: '🇬🇧',
+        search_placeholder: 'Search dish, cuisine, restaurant…',
+        ai_label: 'AI Search',
+        ai_title: 'AI RECOMMENDATIONS',
+        ai_mode: '✦ AI MODE',
+        btn_map: '🗺 Map', btn_list: '📋 List',
+        tag_all: 'All',
+        nav_explore: 'Explore', nav_saved: 'Saved', nav_add: 'Add', nav_profile: 'Profile',
+        list_count_suffix: 'RESTAURANT(S) IN DOUALA',
+        hero_sub: 'Discover the best restaurants',
+        lang_region: 'Language & Region',
+        lang_sub: 'English · Douala, CM 🇨🇲',
+        lang_desc: 'Choose your interface language.',
+        lang_header: 'Language & Region',
+        toast_lang: '🌍 Language changed: English',
+        prefs_title: 'Food Preferences',
+        appear_title: 'Appearance',
+        account_title: 'Account',
+        activity: 'Recent Activity', notifs: 'Notifications', feedback_menu: 'Send Feedback',
+        logout: 'Sign Out',
+        ai_chips: ["Something spicy & cheap", "Authentic Cameroonian food", "Delivery available now", "Fresh seafood", "Going out tonight", "Meal under 5000 FCFA"],
+        ai_input_placeholder: 'e.g. "something warm and comforting"…',
+        // Auth
+        login_tagline: 'Save your favourites, track your reviews\nand get better recommendations.',
+        perk1: 'Save your restaurants across all devices',
+        perk2: 'AI learns your food preferences',
+        perk3: 'Track your reviews and ratings',
+        login_card_title: 'Sign in to FoodMap',
+        login_card_sub: 'Your favourites and preferences synced across all devices.',
+        google_btn: 'Continue with Google',
+        email_cta: '✉️ Continue with email',
+        hide_email: '✕ Hide',
+        or: 'or',
+        skip: 'Continue without signing in',
+        sign_in: 'Sign in',
+        create_account: 'Create account',
+        have_account: 'I already have an account',
+        forgot_pw: 'Forgot password?',
+        signing_in: 'Signing in…',
+        welcome: 'Welcome',
+        signed_out: 'Signed out',
+        guest_mode: 'Browsing as guest',
+        err_invalid_email: 'Invalid email address.',
+        err_short_password: 'Password must be at least 6 characters.',
+        err_enter_email: 'Enter your email first',
+        reset_sent: 'Reset link sent to',
+        ai_error: '⚠ Could not reach AI. Check your connection.',
+      },
+      ar: {
+        name: 'العربية', flag: '🇸🇦',
+        search_placeholder: 'ابحث عن طبق أو مطعم…',
+        ai_label: 'بحث ذكي',
+        ai_title: 'توصيات الذكاء الاصطناعي',
+        ai_mode: '✦ وضع الذكاء الاصطناعي',
+        btn_map: '🗺 الخريطة', btn_list: '📋 القائمة',
+        tag_all: 'الكل',
+        nav_explore: 'استكشف', nav_saved: 'محفوظ', nav_add: 'أضف', nav_profile: 'الملف',
+        list_count_suffix: 'مطعم في دوالا',
+        hero_sub: 'اكتشف أفضل المطاعم',
+        lang_region: 'اللغة والمنطقة',
+        lang_sub: 'العربية · دوالا 🇨🇲',
+        lang_desc: 'اختر لغة الواجهة.',
+        lang_header: 'اللغة والمنطقة',
+        toast_lang: '🌍 تم تغيير اللغة: العربية',
+        prefs_title: 'تفضيلات الطعام',
+        appear_title: 'المظهر',
+        account_title: 'الحساب',
+        activity: 'النشاط الأخير', notifs: 'الإشعارات', feedback_menu: 'أرسل ملاحظة',
+        logout: 'تسجيل الخروج',
+        ai_chips: ["شيء حار ورخيص", "مطبخ كاميروني أصيل", "توصيل متاح الآن", "مأكولات بحرية طازجة", "خروج مساءً", "وجبة بأقل من 5000 فرنك"],
+        ai_input_placeholder: 'مثال: "شيء دافئ ومريح"…',
+        login_tagline: 'احفظ مفضلاتك وتتبع تقييماتك\nواحصل على توصيات أفضل.',
+        perk1: 'احفظ مطاعمك على جميع أجهزتك', perk2: 'يتعلم الذكاء الاصطناعي تفضيلاتك', perk3: 'تتبع تقييماتك وملاحظاتك',
+        login_card_title: 'تسجيل الدخول إلى FoodMap', login_card_sub: 'مفضلاتك وتفضيلاتك محفوظة على جميع أجهزتك.',
+        google_btn: 'متابعة مع Google', email_cta: '✉️ متابعة بالبريد الإلكتروني', hide_email: '✕ إخفاء', or: 'أو',
+        skip: 'المتابعة بدون تسجيل دخول', sign_in: 'تسجيل الدخول', create_account: 'إنشاء حساب',
+        have_account: 'لدي حساب بالفعل', forgot_pw: 'نسيت كلمة المرور؟', signing_in: 'جارٍ الدخول…',
+        welcome: 'أهلاً', signed_out: 'تم تسجيل الخروج', guest_mode: 'التصفح كزائر',
+        err_invalid_email: 'عنوان البريد الإلكتروني غير صالح.', err_short_password: 'يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل.',
+        err_enter_email: 'أدخل بريدك الإلكتروني أولاً', reset_sent: 'تم إرسال رابط إعادة التعيين إلى',
+        ai_error: '⚠ تعذّر الاتصال بالذكاء الاصطناعي. تحقق من اتصالك.',
+      },
+      ew: {
+        name: 'Ewondo', flag: '🇨🇲',
+        search_placeholder: 'Tos a minkəm, a bikelê…',
+        ai_label: 'IA Bikelê',
+        ai_title: 'BIKELÊ IA',
+        ai_mode: '✦ IA',
+        btn_map: '🗺 Kàrt', btn_list: '📋 Ndap',
+        tag_all: 'Biyem',
+        nav_explore: 'Nle', nav_saved: 'Biso', nav_add: 'Bele', nav_profile: 'Mba',
+        list_count_suffix: 'NDAP A DOUALA',
+        hero_sub: 'Nle minkan mi Douala',
+        lang_region: 'Ɔsɔɔ & Mvog',
+        lang_sub: 'Ewondo · Douala 🇨🇲',
+        lang_desc: 'Tɔs ɔsɔɔ wo.',
+        lang_header: 'Ɔsɔɔ & Mvog',
+        toast_lang: '🌍 Ɔsɔɔ: Ewondo',
+        prefs_title: 'Bikelê bi ñam',
+        appear_title: 'Asup',
+        account_title: 'Nkɔŋ',
+        activity: 'Minkəm mi nkobe', notifs: 'Mitom', feedback_menu: 'Yem minkəm',
+        logout: 'Fɔl',
+        ai_chips: ["Ñam a yɛ bəgə", "Ñam a Kamerun", "Mbɔa a tos", "Ñam a mbu", "Tos ngon", "Ñam a 5000 FCFA"],
+        ai_input_placeholder: 'Minkəm: "ñam a zan"…',
+        login_tagline: 'Biso bi ndap bi wo, nle minkəm mi wo.',
+        perk1: 'Biso ndap bi wo a biyem', perk2: 'IA a nle ñam wo', perk3: 'Nle minkəm mi wo',
+        login_card_title: 'Fɔl a FoodMap', login_card_sub: 'Biso bi wo a biyem.',
+        google_btn: 'Tɔs a Google', email_cta: '✉️ Tɔs a e-mail', hide_email: '✕ Fal', or: 'mvɔg',
+        skip: 'Tɔs a bəgə nkɔŋ', sign_in: 'Fɔl', create_account: 'Bele nkɔŋ',
+        have_account: 'Mba nkɔŋ', forgot_pw: 'Wam nkɔŋ?', signing_in: 'Fɔl…',
+        welcome: 'Boa', signed_out: 'Fɔl', guest_mode: 'Tɔs a bəgə nkɔŋ',
+        err_invalid_email: 'E-mail a yɛ bəgə.', err_short_password: 'Nkɔŋ a yɛ 6 minkəm.',
+        err_enter_email: 'Tɔs e-mail wo', reset_sent: 'Link a bele a',
+        ai_error: '⚠ IA a yɛ bəgə. Tɔs asup wo.',
+      },
+      pidgin: {
+        name: 'Cameroonian Pidgin', flag: '🤝',
+        search_placeholder: 'Search chop, restaurant…',
+        ai_label: 'AI Search',
+        ai_title: 'AI RECOMMENDATIONS',
+        ai_mode: '✦ AI MODE',
+        btn_map: '🗺 Map', btn_list: '📋 List',
+        tag_all: 'All',
+        nav_explore: 'Find am', nav_saved: 'Keep am', nav_add: 'Add', nav_profile: 'My side',
+        list_count_suffix: 'CHOP HOUSE FOR DOUALA',
+        hero_sub: 'Find di best chop house dem',
+        lang_region: 'Language & Place',
+        lang_sub: 'Pidgin · Douala 🇨🇲',
+        lang_desc: 'Choose how you want hear am.',
+        lang_header: 'Language & Place',
+        toast_lang: '🌍 Language don change: Pidgin',
+        prefs_title: 'Wetin you like chop',
+        appear_title: 'How e go look',
+        account_title: 'Your account',
+        activity: 'Wetin you do', notifs: 'Notification', feedback_menu: 'Tell us something',
+        logout: 'Commot',
+        ai_chips: ["Something hot and cheap", "Cameroon chop", "Delivery dey available", "Fresh fish and seafood", "Wan go out tonight", "Chop under 5000 FCFA"],
+        ai_input_placeholder: 'E.g. "Something good for belly"…',
+        login_tagline: 'Save your chop houses, track your reviews\nand get better recommendations.',
+        perk1: 'Save your chop houses for all devices', perk2: 'AI go learn wetin you like chop', perk3: 'Track your reviews and ratings',
+        login_card_title: 'Enter FoodMap', login_card_sub: 'Your favourites and preferences go follow you everywhere.',
+        google_btn: 'Continue with Google', email_cta: '✉️ Use email', hide_email: '✕ Hide', or: 'or',
+        skip: 'Continue without account', sign_in: 'Enter', create_account: 'Make new account',
+        have_account: 'I get account already', forgot_pw: 'Forget password?', signing_in: 'Entering…',
+        welcome: 'Welcome', signed_out: 'You don commot', guest_mode: 'You dey browse as visitor',
+        err_invalid_email: 'Email no correct.', err_short_password: 'Password must get 6 character at least.',
+        err_enter_email: 'Put your email first', reset_sent: 'Reset link don go to',
+        ai_error: '⚠ AI no fit connect. Check your network.',
+      }
+    };
+
+    function applyLanguage(code, el) {
+      currentLang = code;
+      const L = LANGS[code];
+      if (!L) return;
+
+      // Mark active lang option
+      document.querySelectorAll('.lang-option').forEach(o => o.classList.toggle('active', o.dataset.lang === code));
+
+      // RTL support for Arabic
+      document.documentElement.dir = code === 'ar' ? 'rtl' : 'ltr';
+
+      // Update UI strings
+      const si = document.getElementById('search-input');
+      if (si) si.placeholder = L.search_placeholder;
+      const ai_inp = document.getElementById('ai-input');
+      if (ai_inp) ai_inp.placeholder = L.ai_input_placeholder;
+      const al = document.querySelector('.ai-label');
+      if (al) al.textContent = L.ai_label;
+      const art = document.querySelector('.ai-res-title');
+      if (art) art.textContent = L.ai_title;
+      const amb = document.getElementById('ai-mode-badge');
+      if (amb) amb.textContent = L.ai_mode;
+      const bm = document.getElementById('btn-map');
+      if (bm) bm.textContent = L.btn_map;
+      const bl = document.getElementById('btn-list');
+      if (bl) bl.textContent = L.btn_list;
+
+      // Tags "Tous/All"
+      const tagAll = document.querySelector('.tag[data-tag="all"]');
+      if (tagAll) tagAll.textContent = L.tag_all;
+
+      // Nav labels
+      const navMap = document.querySelector('#nb-map .nl');
+      if (navMap) navMap.textContent = L.nav_explore;
+      const navSaved = document.querySelector('#nb-saved .nl');
+      if (navSaved) navSaved.textContent = L.nav_saved;
+      const navAdd = document.querySelector('#nb-add .nl');
+      if (navAdd) navAdd.textContent = L.nav_add;
+      const navProf = document.querySelector('#nb-profile .nl');
+      if (navProf) navProf.textContent = L.nav_profile;
+
+      // Hero subtitle
+      const heroSub = document.getElementById('hero-sub-text');
+      if (heroSub) heroSub.textContent = L.hero_sub;
+
+      // Language menu row subtitle in profile
+      const langSub = document.getElementById('current-lang-sub');
+      if (langSub) langSub.textContent = L.lang_sub;
+
+      // Profile section titles
+      const prefTitle = document.querySelector('#pref-grid')?.previousElementSibling;
+      if (prefTitle) prefTitle.textContent = L.prefs_title;
+
+      // Account section title
+      document.querySelectorAll('.profile-section-title').forEach(el => {
+        const txt = el.textContent.trim();
+        if (['Apparence', 'Appearance', 'Asup', 'How e go look', 'المظهر'].includes(txt)) el.textContent = L.appear_title;
+        if (['Compte', 'Account', 'Nkɔŋ', 'Your account', 'الحساب'].includes(txt)) el.textContent = L.account_title;
+      });
+
+      // Menu rows with data-i18n keys
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (L[key]) el.textContent = L[key];
+      });
+
+      // AI chips
+      const chips = document.querySelectorAll('.ai-chip');
+      L.ai_chips.forEach((txt, i) => { if (chips[i]) chips[i].textContent = txt; });
+
+      // Lang page itself
+      const ldesc = document.getElementById('lang-desc');
+      if (ldesc) ldesc.textContent = L.lang_desc;
+      const lheader = document.getElementById('lang-header-title');
+      if (lheader) lheader.textContent = L.lang_header;
+
+      // Logout button
+      const logout = document.querySelector('.logout-btn');
+      if (logout) logout.textContent = L.logout;
+
+      // ── Login screen strings ──
+      const loginTagline = document.getElementById('login-tagline-text');
+      if (loginTagline && L.login_tagline) loginTagline.innerHTML = L.login_tagline.replace('\n', '<br/>');
+      const p1 = document.getElementById('perk1-text'); if (p1 && L.perk1) p1.textContent = L.perk1;
+      const p2 = document.getElementById('perk2-text'); if (p2 && L.perk2) p2.textContent = L.perk2;
+      const p3 = document.getElementById('perk3-text'); if (p3 && L.perk3) p3.textContent = L.perk3;
+      const lct = document.getElementById('login-card-title'); if (lct && L.login_card_title) lct.textContent = L.login_card_title;
+      const lcs = document.getElementById('login-card-sub'); if (lcs && L.login_card_sub) lcs.textContent = L.login_card_sub;
+      const gbt = document.getElementById('google-btn-text'); if (gbt && L.google_btn) gbt.textContent = L.google_btn;
+      const divOr = document.getElementById('login-divider-or'); if (divOr && L.or) divOr.textContent = L.or;
+      const skipBtn = document.getElementById('skip-login-btn'); if (skipBtn && L.skip) skipBtn.textContent = L.skip;
+      const etxt = document.getElementById('email-toggle-text');
+      if (etxt) etxt.textContent = emailFormVisible ? (L.hide_email || '✕ Hide') : (L.email_cta || '✉️ Continue with email');
+      const ebl = document.getElementById('email-btn-label');
+      if (ebl) ebl.textContent = emailSignupMode ? (L.create_account || 'Create account') : (L.sign_in || 'Sign in');
+      const tsl = document.getElementById('toggle-signup-link');
+      if (tsl) tsl.textContent = emailSignupMode ? (L.have_account || 'Have an account') : (L.create_account || 'Create account');
+      const fpl = document.getElementById('forgot-pw-link'); if (fpl && L.forgot_pw) fpl.textContent = L.forgot_pw;
+      const loginInput = document.getElementById('login-email');
+      if (loginInput) loginInput.placeholder = 'Email';
+      const pwInput = document.getElementById('login-password');
+      if (pwInput) pwInput.placeholder = code === 'ar' ? 'كلمة المرور' : code === 'ew' ? 'Nkɔŋ' : code === 'pidgin' ? 'Password' : 'Mot de passe';
+
+      // Re-render list count if DOM is ready
+      if (document.getElementById('rlist')) renderList();
+
+      toast(L.toast_lang);
+    }
+
+    // 🚑 Emergency fallback — prevents infinite loading screen under any failure scenario
+    setTimeout(() => {
+      const loader = document.getElementById('loader');
+      if (loader) loader.style.display = 'none';
+    }, 4000);
+  </script>
+</body>
+
+</html>
