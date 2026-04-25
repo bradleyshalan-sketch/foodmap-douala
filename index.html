@@ -445,8 +445,7 @@
     }
 
     #map-section {
-      flex-shrink: 0;
-      height: 40vh;
+      flex: 1;
       min-height: 220px;
       transition: height .38s cubic-bezier(.4, 0, .2, 1), opacity .3s;
       overflow: hidden;
@@ -3688,8 +3687,7 @@
     // ── DATA — Real restaurants in Douala, Cameroon ──────────────────────────
     const DATA = [
       {
-        id: 1, name: "La Falaise", cuisine: "Cameroonian · Continental", type: "Restaurant",
-        lat: 4.0511, lng: 9.7679, address: "Rue Pau, Bonanjo, Douala",
+        lat: 4.0450, lng: 9.6890, address: "Rue Kitchener, Bonanjo, Douala",
         neighborhood: "Bonanjo", phone: "+237 233 42 45 55",
         whatsapp: "+237233424555",
         rating: 4.7, reviews: 284, price: "$$$", priceNum: 3, emoji: "🍽️", color: "#E63946",
@@ -3712,8 +3710,7 @@
         ]
       },
       {
-        id: 2, name: "Le Biniou", cuisine: "Cameroonian · Grillades", type: "Maquis · Bar",
-        lat: 4.0612, lng: 9.7812, address: "Akwa Nord, Douala",
+        lat: 4.0650, lng: 9.7150, address: "Akwa Nord, Douala",
         neighborhood: "Akwa", phone: "+237 699 23 45 67",
         whatsapp: "+237699234567",
         rating: 4.5, reviews: 412, price: "$$", priceNum: 2, emoji: "🔥", color: "#FF8C42",
@@ -3736,8 +3733,7 @@
         ]
       },
       {
-        id: 3, name: "Wouri Seafood", cuisine: "Fruits de Mer · Cameroonian", type: "Restaurant",
-        lat: 4.0455, lng: 9.6970, address: "Bali Beach Road, Bali, Douala",
+        lat: 4.0430, lng: 9.6970, address: "Bali Beach Road, Bali, Douala",
         neighborhood: "Bali", phone: "+237 677 88 90 12",
         whatsapp: "+237677889012",
         rating: 4.8, reviews: 198, price: "$$$", priceNum: 3, emoji: "🦐", color: "#2EC4B6",
@@ -3760,8 +3756,7 @@
         ]
       },
       {
-        id: 4, name: "Saveur du Terroir", cuisine: "Cameroonian · Traditionnel", type: "Restaurant populaire",
-        lat: 4.0558, lng: 9.7445, address: "Marché Central, Deido, Douala",
+        lat: 4.0720, lng: 9.7180, address: "Marché Central, Deido, Douala",
         neighborhood: "Deido", phone: "+237 654 32 10 98",
         whatsapp: "+237654321098",
         rating: 4.6, reviews: 567, price: "$", priceNum: 1, emoji: "🌿", color: "#52B788",
@@ -3784,8 +3779,7 @@
         ]
       },
       {
-        id: 5, name: "Chez Maman Ngo", cuisine: "Street Food · Cameroonian", type: "Restaurant de quartier",
-        lat: 4.0680, lng: 9.7940, address: "Carrefour Elf, Bonapriso, Douala",
+        lat: 4.0320, lng: 9.7020, address: "Carrefour Elf, Bonapriso, Douala",
         neighborhood: "Bonapriso", phone: "+237 677 11 22 33",
         whatsapp: "+237677112233",
         rating: 4.4, reviews: 320, price: "$", priceNum: 1, emoji: "🍲", color: "#FFC14D",
@@ -3808,8 +3802,7 @@
         ]
       },
       {
-        id: 6, name: "Restaurant du Fleuve", cuisine: "Continental · Cameroonian", type: "Restaurant-Hôtel",
-        lat: 4.0490, lng: 9.7020, address: "Boulevard de la Liberté, Akwa, Douala",
+        lat: 4.0550, lng: 9.7000, address: "Boulevard de la Liberté, Akwa, Douala",
         neighborhood: "Akwa", phone: "+237 233 42 60 00",
         whatsapp: "+237233426000",
         rating: 4.3, reviews: 145, price: "$$$$", priceNum: 4, emoji: "🥂", color: "#A78BFA",
@@ -3831,8 +3824,7 @@
         ]
       },
       {
-        id: 7, name: "Fast & Grill Akwa", cuisine: "Fast Food · Grillades", type: "Fast Food",
-        lat: 4.0634, lng: 9.7850, address: "Rue Joffre, Akwa, Douala",
+        lat: 4.0580, lng: 9.7100, address: "Rue Joffre, Akwa, Douala",
         neighborhood: "Akwa", phone: "+237 690 55 44 33",
         whatsapp: "+237690554433",
         rating: 4.2, reviews: 498, price: "$", priceNum: 1, emoji: "🍔", color: "#FF5533",
@@ -3855,8 +3847,7 @@
         ]
       },
       {
-        id: 8, name: "Le Libanais", cuisine: "Libanais · Méditerranéen", type: "Restaurant",
-        lat: 4.0600, lng: 9.7700, address: "Rue du Commerce, Bonanjo, Douala",
+        lat: 4.0460, lng: 9.6920, address: "Rue du Commerce, Bonanjo, Douala",
         neighborhood: "Bonanjo", phone: "+237 233 43 21 00",
         whatsapp: "+237233432100",
         rating: 4.6, reviews: 231, price: "$$$", priceNum: 3, emoji: "🥙", color: "#E76F51",
@@ -3876,6 +3867,290 @@
           { u: "Nawal K.", t: "Authentique comme au Liban. Les mezzes sont généreux et savoureux.", s: 5 },
           { u: "Christophe M.", t: "Le shawarma est excellent. Meilleur que ceux de ma ville natale !", s: 5 },
           { u: "Sandra N.", t: "Livraison fiable et rapide. La qualité ne déçoit jamais.", s: 4 },
+        ]
+      },
+      {
+        id: 9, name: "Le Moulin de France", cuisine: "Boulangerie · Bistro · Français", type: "Pâtisserie · Cafe",
+        lat: 4.0528, lng: 9.7075, address: "Boulevard de la Liberté, Akwa, Douala",
+        neighborhood: "Akwa", phone: "+237 233 42 20 20",
+        whatsapp: "+237699101010",
+        rating: 4.5, reviews: 850, price: "$$", priceNum: 2, emoji: "🥖", color: "#F4A261",
+        tags: ["petit-déjeuner", "croissant", "bistro", "pain", "café", "climatisation", "akwa", "français"],
+        hours: "07:00 – 21:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Petit-déjeuner Complet", p: 5500, h: true, desc: "Café/thé, jus d'orange, omelette, tartines & croissant" },
+          { n: "Quiche Lorraine", p: 3500, h: false, desc: "Lardons, crème fraîche, pâte brisée maison" },
+          { n: "Steak Frites", p: 9500, h: false, desc: "Bœuf local tendre, frites fraîches, salade verte" },
+          { n: "Éclair au Chocolat", p: 1500, h: true, desc: "Pâte à choux, crème pâtissière chocolat noir" },
+        ],
+        revs: [
+          { u: "Yasmine L.", t: "L'institution de Douala. Les croissants sont les meilleurs de la ville.", s: 5 },
+          { u: "David J.", t: "Parfait pour un rendez-vous le matin. Service un peu lent parfois.", s: 4 }
+        ]
+      },
+      {
+        id: 10, name: "L'Ovalie", cuisine: "Grillades · Français", type: "Restaurant · Jardin",
+        lat: 4.0289, lng: 9.6973, address: "Rue Njo-Njo / Soppo Priso, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 233 43 00 00",
+        whatsapp: "+237699000000",
+        rating: 4.6, reviews: 310, price: "$$$", priceNum: 3, emoji: "🥩", color: "#BC6C25",
+        tags: ["jardin", "grillades", "côte de boeuf", "terrasse", "rugby", "bonapriso", "ambiance"],
+        hours: "12:00 – 23:30", spicy: false, healthy: false,
+        delivery: false, takeaway: true, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Magret de canard entier", p: 14500, h: true, desc: "Sauce canneberge, pommes sautées" },
+          { n: "Côte de bœuf (1kg)", p: 28000, h: false, desc: "À partager, cuite au feu de bois" },
+          { n: "Carpaccio de bœuf", p: 6500, h: true, desc: "Huile de truffe, parmesan, roquette" },
+          { n: "Profiteroles maison", p: 4500, h: false, desc: "Chocolat chaud, glace vanille" },
+        ],
+        revs: [
+          { u: "Georges B.", t: "Le cadre en jardin est magnifique. La côte de bœuf est une légende.", s: 5 },
+          { u: "Valérie P.", t: "Ambiance rugby très sympa. Viande de haute qualité.", s: 5 }
+        ]
+      },
+      {
+        id: 11, name: "Le Boj", cuisine: "Lounge · Méditerranéen", type: "Lounge · Bar",
+        lat: 4.0350, lng: 9.6980, address: "Rue Tokoto, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 699 99 99 99",
+        whatsapp: "+237677777777",
+        rating: 4.4, reviews: 215, price: "$$$$", priceNum: 4, emoji: "🍸", color: "#8E94F2",
+        tags: ["lounge", "cocktails", "musique", "chic", "bonapriso", "nuit", "tapas"],
+        hours: "18:00 – 03:00", spicy: false, healthy: false,
+        delivery: false, takeaway: false, reservations: true,
+        popular: [0, 1],
+        menu: [
+          { n: "Plateau de Tapas Boj", p: 12000, h: true, desc: "Sélection du chef pour accompagner vos verres" },
+          { n: "Cocktail Signature", p: 7000, h: false, desc: "Mélange secret de fruits tropicaux et spiritueux premium" },
+          { n: "Mini Burgers (3pc)", p: 6500, h: false, desc: "Boeuf, Poulet, Poisson" },
+        ],
+        revs: [
+          { u: "Marc-Aurel S.", t: "Le spot le plus chic de Douala. Excellente playlist.", s: 5 },
+          { u: "Inès K.", t: "Cocktails originaux. Idéal pour débuter la soirée.", s: 4 }
+        ]
+      },
+      {
+        id: 12, name: "Istanbul Restaurant", cuisine: "Turc · Grillades", type: "Restaurant",
+        lat: 4.0560, lng: 9.7120, address: "Face Direction Générale MTN, Akwa, Douala",
+        neighborhood: "Akwa", phone: "+237 233 42 00 11",
+        whatsapp: "+237699112233",
+        rating: 4.6, reviews: 180, price: "$$", priceNum: 2, emoji: "🥙", color: "#D62828",
+        tags: ["turc", "halal", "kebap", "ayran", "akwa", "grillades", "famille"],
+        hours: "11:00 – 23:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Adana Kebap", p: 6500, h: true, desc: "Viande hachée épicée grillée, servi avec boulgour" },
+          { n: "Assiette Mixte Istanbul", p: 12500, h: false, desc: "Assortiment de grillades turques" },
+          { n: "Lahmacun", p: 2500, h: true, desc: "Fine galette turque à la viande et légumes" },
+          { n: "Kunefe", p: 3500, h: false, desc: "Dessert chaud au fromage et sirop" },
+        ],
+        revs: [
+          { u: "Omar H.", t: "Le vrai goût d'Istanbul à Douala. L'accueil est chaleureux.", s: 5 },
+          { u: "Sophie R.", t: "Excellent rapport qualité-prix. Les mezzes offerts en entrée sont top.", s: 5 }
+        ]
+      },
+      {
+        id: 13, name: "Le Plaisir du Goût", cuisine: "Français · Gastronomique", type: "Restaurant",
+        lat: 4.0380, lng: 9.7000, address: "Rue Koloko, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 233 42 15 15",
+        whatsapp: "+237699151515",
+        rating: 4.7, reviews: 155, price: "$$$$", priceNum: 4, emoji: "🍷", color: "#606C38",
+        tags: ["gastronomique", "français", "vins", "romantique", "bonapriso", "fin gourmet"],
+        hours: "19:00 – 23:00", spicy: false, healthy: true,
+        delivery: false, takeaway: false, reservations: true,
+        popular: [1, 2],
+        menu: [
+          { n: "Filet de capitaine en croûte de sel", p: 16500, h: true, desc: "Légumes vapeurs, sauce hollandaise" },
+          { n: "Soupe à l'oignon traditionnelle", p: 5500, h: false, desc: "Gratinée au fromage emmental" },
+          { n: "Fondant au chocolat coeur coulant", p: 5000, h: false, desc: "Glace vanille Bourbon" },
+        ],
+        revs: [
+          { u: "Charles D.", t: "Une expérience culinaire raffinée. Carte des vins impressionnante.", s: 5 },
+          { u: "Marthe W.", t: "Le cadre est intime et très élégant. Idéal pour un dîner romantique.", s: 5 }
+        ]
+      },
+      {
+        id: 14, name: "Sisson", cuisine: "Poisson Braisé · Cameroonian", type: "Maquis Chic",
+        lat: 4.0340, lng: 9.7040, address: "Près de l'ancien aéroport, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 699 33 44 55",
+        whatsapp: "+237699334455",
+        rating: 4.5, reviews: 520, price: "$$", priceNum: 2, emoji: "🐟", color: "#3A86FF",
+        tags: ["poisson braisé", "maquis", "local", "bonapriso", "authentique", "plein air"],
+        hours: "16:00 – NOCTURNE", spicy: true, healthy: true,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Bar braisé géant", p: 8500, h: true, desc: "Poisson frais, marinade secrète, miondo & plantains" },
+          { n: "Poulet braisé complet", p: 7500, h: true, desc: "Poulet jaune, piment fort sur le côté" },
+          { n: "Miondo (le bâton)", p: 300, h: false, desc: "Manioc pilé, un classique" },
+        ],
+        revs: [
+          { u: "Idriss N.", t: "L'adresse incontournable pour le poisson braisé à Bonapriso.", s: 5 },
+          { u: "Linda M.", t: "Toujours frais, toujours bon. L'ambiance est conviviale.", s: 4 }
+        ]
+      },
+      {
+        id: 15, name: "Boulangerie Zepol", cuisine: "Boulangerie · Snack", type: "Boulangerie",
+        lat: 4.0529, lng: 9.6975, address: "Carrefour Anatole, Akwa, Douala",
+        neighborhood: "Akwa", phone: "+237 233 42 10 10",
+        whatsapp: "+237699102030",
+        rating: 4.3, reviews: 1200, price: "$", priceNum: 1, emoji: "🥪", color: "#FFB703",
+        tags: ["boulangerie", "snack", "hamburger", "historique", "akwa", "rapide"],
+        hours: "24/24", spicy: false, healthy: false,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Hamburger Classique Zepol", p: 1500, h: true, desc: "Le snack légendaire de Douala — rapide et bon" },
+          { n: "Pain chargé (Omelette)", p: 1000, h: false, desc: "Quart de pain, 2 oeufs, crudités" },
+          { n: "Croissant pur beurre", p: 500, h: false, desc: "Frais du matin" },
+        ],
+        revs: [
+          { u: "Thierry O.", t: "Zepol c'est Douala ! Le burger est simple mais indétronable.", s: 5 },
+          { u: "Aminata S.", t: "Ouvert H24, sauveur de fin de soirée.", s: 4 }
+        ]
+      },
+      {
+        id: 16, name: "Maquis Le Tandem", cuisine: "Local · Grillades", type: "Maquis",
+        lat: 4.0750, lng: 9.7220, address: "Rue Deido-Akwa, Deido, Douala",
+        neighborhood: "Deido", phone: "+237 677 00 11 22",
+        whatsapp: "+237677001122",
+        rating: 4.4, reviews: 290, price: "$", priceNum: 1, emoji: "🍢", color: "#FB5607",
+        tags: ["maquis", "local", "deido", "poisson braisé", "bières", "ambiance"],
+        hours: "16:00 – 01:00", spicy: true, healthy: true,
+        delivery: false, takeaway: true, reservations: false,
+        popular: [0, 2],
+        menu: [
+          { n: "Capitaine braisé (Moyen)", p: 4500, h: true, desc: "Direct du fleuve Wouri, sauce djobi" },
+          { n: "Brochettes de rognons (5pc)", p: 1500, h: false, desc: "Grillées minute" },
+          { n: "Plantain frit (Alloco)", p: 1000, h: false, desc: "Grosse portion" },
+        ],
+        revs: [
+          { u: "Fabrice L.", t: "Le Tandem c'est la base à Deido. Poisson frais garanti.", s: 5 },
+          { u: "Sandrine J.", t: "Ambiance 100% locale, parfait pour une bière et un poisson.", s: 4 }
+        ]
+      },
+      {
+        id: 17, name: "Le Dragon d'Or", cuisine: "Chinois", type: "Restaurant",
+        lat: 4.0270, lng: 9.6940, address: "Rue des Palmiers, Bonapriso, Douala",
+        neighborhood: "Bonapriso", phone: "+237 233 42 88 88",
+        whatsapp: "+237699888888",
+        rating: 4.5, reviews: 140, price: "$$$", priceNum: 3, emoji: "🏮", color: "#D00000",
+        tags: ["chinois", "asiatique", "bonapriso", "canard laqué", "nems", "riz sauté"],
+        hours: "11:30 – 23:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Canard Laqué Entier", p: 25000, h: true, desc: "Servi avec crêpes et sauce hoisin" },
+          { n: "Riz sauté aux crevettes", p: 7500, h: false, desc: "Crevettes du Wouri, petits pois, oeufs" },
+          { n: "Nems au porc (4pc)", p: 4500, h: true, desc: "Croustillants, salade et menthe" },
+          { n: "Boeuf aux oignons", p: 9500, h: false, desc: "Wok sauté minute" },
+        ],
+        revs: [
+          { u: "Mei L.", t: "Authentique cuisine chinoise, le canard laqué est top.", s: 5 },
+          { u: "Dimitri K.", t: "Service rapide et efficace. Plats copieux.", s: 4 }
+        ]
+      },
+      {
+        id: 18, name: "Le Glacier Moderne (LGM)", cuisine: "Snack · Glacier · Bistro", type: "Bistro · Glacier",
+        lat: 4.1020, lng: 9.7420, address: "Face Groupe Scolaire Wafo, Bonamoussadi, Douala",
+        neighborhood: "Bonamoussadi", phone: "+237 233 47 00 01",
+        whatsapp: "+237699470001",
+        rating: 4.4, reviews: 620, price: "$$", priceNum: 2, emoji: "🍦", color: "#FFB0C1",
+        tags: ["glacier", "burger", "famille", "bonamoussadi", "climatisé", "pâtisserie"],
+        hours: "08:00 – 22:30", spicy: false, healthy: false,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 2],
+        menu: [
+          { n: "Coupe de Glace 3 boules", p: 2500, h: true, desc: "Vaste choix de parfums artisanaux" },
+          { n: "Double Cheese Burger", p: 4500, h: false, desc: "Fait minute, servi avec frites" },
+          { n: "Moka (Part de gâteau)", p: 1500, h: true, desc: "Pâtisserie signature LGM" },
+        ],
+        revs: [
+          { u: "Isabelle Y.", t: "Le meilleur endroit à Bonamoussadi pour une glace en famille.", s: 5 },
+          { u: "Christian M.", t: "Espace agréable et moderne. Les burgers sont corrects.", s: 4 }
+        ]
+      },
+      {
+        id: 19, name: "Origines Restaurant", cuisine: "Cameroonian · International", type: "Restaurant",
+        lat: 4.0980, lng: 9.7480, address: "Près de la Gendarmerie, Bonamoussadi, Douala",
+        neighborhood: "Bonamoussadi", phone: "+237 677 22 33 44",
+        whatsapp: "+237677223344",
+        rating: 4.5, reviews: 125, price: "$$", priceNum: 2, emoji: "🍲", color: "#7F5539",
+        tags: ["traditionnel", "bonamoussadi", "ndolé", "pizza", "local", "convivial"],
+        hours: "11:00 – 23:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: true,
+        popular: [0, 2],
+        menu: [
+          { n: "Ndolé au poisson braisé", p: 6000, h: true, desc: "Recette traditionnelle, goût authentique" },
+          { n: "Pizza Reine (Grande)", p: 5500, h: false, desc: "Tomate, mozzarella, jambon, champignons" },
+          { n: "Poulet DG", p: 7500, h: true, desc: "Délicieux mariage de poulet et plantains mûrs" },
+        ],
+        revs: [
+          { u: "Stéphane K.", t: "Cuisine très soignée. Le Ndolé est comme à la maison.", s: 5 },
+          { u: "Bernadette E.", t: "Bonne ambiance pour un dîner tranquille.", s: 4 }
+        ]
+      },
+      {
+        id: 20, name: "À La Porte Jaune", cuisine: "Mixte · Grillades", type: "Restaurant · Jardin",
+        lat: 4.1050, lng: 9.7350, address: "Petit-Pays, Bonamoussadi, Douala",
+        neighborhood: "Bonamoussadi", phone: "+237 699 88 77 66",
+        whatsapp: "+237699887766",
+        rating: 4.3, reviews: 240, price: "$$", priceNum: 2, emoji: "🚪", color: "#F9C74F",
+        tags: ["jardin", "plein air", "bonamoussadi", "local", "poisson", "braisé"],
+        hours: "12:00 – 00:00", spicy: true, healthy: true,
+        delivery: false, takeaway: true, reservations: true,
+        popular: [0, 1],
+        menu: [
+          { n: "Capitaine braisé (Moyen)", p: 5500, h: true, desc: "Poisson du jour, marinade spéciale" },
+          { n: "Brochettes de soja (6pc)", p: 2000, h: false, desc: "Viande de boeuf marinée aux épices" },
+          { n: "Miondo de Yabassi", p: 500, h: false, desc: "Le bâton de manioc traditionnel" },
+        ],
+        revs: [
+          { u: "Pauline G.", t: "Le cadre extérieur est vraiment relaxant le soir.", s: 5 },
+          { u: "Nicolas D.", t: "Poisson toujours bien assaisonné. Bon service.", s: 4 }
+        ]
+      },
+      {
+        id: 21, name: "White House (Bonamoussadi)", cuisine: "Cameroonian · Buffet", type: "Restaurant",
+        lat: 4.0950, lng: 9.7520, address: "Carrefour Bonamoussadi, Douala",
+        neighborhood: "Bonamoussadi", phone: "+237 233 47 12 34",
+        whatsapp: "+237677123456",
+        rating: 4.2, reviews: 890, price: "$$", priceNum: 2, emoji: "🏰", color: "#FFFFFF",
+        tags: ["buffet", "mets locaux", "ndolé", "eru", "bonamoussadi", "traditionnel"],
+        hours: "08:00 – 21:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Accès Buffet Mets Locaux", p: 5000, h: true, desc: "Tout à volonté: Ndolé, Eru, Taro, Achu..." },
+          { n: "Plat de Ndolé Simple", p: 2500, h: false, desc: "Servi avec complément au choix" },
+          { n: "Eru & Waterleaf", p: 3000, h: true, desc: "Spécialité du Nord-Ouest" },
+        ],
+        revs: [
+          { u: "Ferdinand S.", t: "Le buffet est imbattable. On mange à sa faim pour pas cher.", s: 4 },
+          { u: "Angèle V.", t: "Très propre et bien organisé. Idéal pour un déjeuner rapide.", s: 4 }
+        ]
+      },
+      {
+        id: 22, name: "O'Saveur", cuisine: "Européen · Snack", type: "Restaurant · Snack",
+        lat: 4.1010, lng: 9.7380, address: "Face Entrée SODECOTON, Bonamoussadi, Douala",
+        neighborhood: "Bonamoussadi", phone: "+237 690 10 20 30",
+        whatsapp: "+237690102030",
+        rating: 4.4, reviews: 155, price: "$$", priceNum: 2, emoji: "🥗", color: "#43AA8B",
+        tags: ["salade", "sandwich", "bonamoussadi", "propre", "rapide", "frais"],
+        hours: "09:00 – 22:00", spicy: false, healthy: true,
+        delivery: true, takeaway: true, reservations: false,
+        popular: [0, 1],
+        menu: [
+          { n: "Salade O'Saveur", p: 3500, h: true, desc: "Mixte de crudités, poulet fumé, vinaigrette maison" },
+          { n: "Club Sandwich Poulet", p: 2500, h: false, desc: "Tranches de pain grillées, poulet, oeuf, mayonnaise" },
+          { n: "Jus d'Ananas frais", p: 1000, h: true, desc: "Zéro sucre ajouté" },
+        ],
+        revs: [
+          { u: "Raissa B.", t: "Enfin un endroit où on mange sain à Bonamoussadi !", s: 5 },
+          { u: "Xavier N.", t: "Produits très frais. Idéal pour le déjeuner au bureau.", s: 4 }
         ]
       },
     ];
@@ -4025,7 +4300,7 @@
 
       // ── Leaflet map ────────────────────────────────────────────────────────
       if (L.Browser.mobile) { document.documentElement.style.setProperty('--leaflet-zoom-duration', '0.1s'); }
-      map = L.map('map', { center: [4.061, 9.778], zoom: 13, zoomControl: true, attributionControl: false });
+      map = L.map('map', { center: [4.050, 9.700], zoom: 13, zoomControl: true, attributionControl: false });
 
       // CartoDB Dark Matter — free, no API key, looks great with dark theme
       const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -4035,7 +4310,7 @@
       }).addTo(map);
 
       DATA.forEach(placeMarker);
-      map.on('click', () => { if (sheetState() === 'half' && !selectedId) showSheet('peek'); });
+      map.on('click', () => { if (sheetState() === 'half' && !selectedId) showSheet('gone'); });
 
       function syncTopbarSpacer() {
         const tb = document.getElementById('topbar');
@@ -4049,7 +4324,7 @@
       setTimeout(() => {
         const loader = document.getElementById('loader');
         if (loader) loader.style.display = 'none';
-        showSheet('peek');
+        showSheet('gone');
         renderList();
         setTimeout(() => { if (map) map.invalidateSize(); }, 420);
         // Show Places fetch banner
@@ -4064,9 +4339,9 @@
       let sy;
       h.addEventListener('mousedown', e => { sy = e.clientY; });
       h.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
-      document.addEventListener('mousemove', e => { if (sy === undefined) return; const d = e.clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('peek'); } });
+      document.addEventListener('mousemove', e => { if (sy === undefined) return; const d = e.clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('gone'); } });
       document.addEventListener('mouseup', () => { sy = undefined; });
-      document.addEventListener('touchmove', e => { if (sy === undefined) return; const d = e.touches[0].clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('peek'); } }, { passive: true });
+      document.addEventListener('touchmove', e => { if (sy === undefined) return; const d = e.touches[0].clientY - sy; if (d < -50) showSheet('half'); else if (d > 50) { if (selectedId) closeDetail(); else showSheet('gone'); } }, { passive: true });
       document.addEventListener('touchend', () => { sy = undefined; });
     }
 
@@ -4444,7 +4719,7 @@ Règles:
         document.getElementById('ai-mode-badge').style.display = 'block';
         highlightMarker(null, aiIds);
         renderList(orderedResults, aiReasons);
-        showSheet('peek');
+        showSheet('gone');
 
       } catch (e) {
         // Fix #10: use the i18n system instead of a manual language chain
@@ -4633,7 +4908,7 @@ Règles:
       if (currentView === 'map') {
         highlightMarker(null, aiMode ? currentAiIds : []);
         if (map) map.flyTo([4.061, 9.778], 13, { duration: .7 });
-        showSheet('peek');
+        showSheet('gone');
       }
       // If detail was opened from saved view, return to it
       if (_prevNavContext === 'saved') {
@@ -5179,7 +5454,7 @@ Règles:
         mapSection.classList.remove('hidden');
         sheet.classList.remove('list-mode');
         if (hero) hero.classList.remove('hidden');
-        showSheet('peek');
+        showSheet('gone');
         btnMap.classList.add('active');
         btnList.classList.remove('active');
         setTimeout(() => { if (map) map.invalidateSize(); }, 380);
