@@ -363,8 +363,12 @@
     /* ── PHONE: keep original single-column feel ────────────────── */
     @media (max-width:599px) {
       #app {
-        max-width: 480px;
-        margin: 0 auto
+        width: 100%;
+        margin: 0
+      }
+
+      #hero-banner {
+        height: 120px;
       }
 
       html,
@@ -5461,7 +5465,7 @@ Règles:
       } else {
         if (!isWide) {
           mapSection.classList.add('hidden');
-          if (hero) hero.classList.add('hidden');
+          if (hero) hero.classList.remove('hidden'); // Keep image visible
         }
         sheet.classList.add('list-mode');
         btnList.classList.add('active');
