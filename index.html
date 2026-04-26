@@ -5011,14 +5011,28 @@ Règles:
       document.getElementById('saved-view').classList.remove('open');
       document.getElementById('profile-view').classList.remove('open');
 
+      // Elements that should only show on the 'Explorer/Map' page
+      const exploreEls = ['hero-banner', 'controls-bar', 'main-area'];
+
       if (t === 'map') {
-        // nothing extra needed
-      } else if (t === 'saved') {
-        renderSavedView();
-        document.getElementById('saved-view').classList.add('open');
-      } else if (t === 'profile') {
-        renderProfileView();
-        document.getElementById('profile-view').classList.add('open');
+        exploreEls.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = '';
+        });
+        if (map) setTimeout(() => map.invalidateSize(), 50);
+      } else {
+        exploreEls.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+
+        if (t === 'saved') {
+          renderSavedView();
+          document.getElementById('saved-view').classList.add('open');
+        } else if (t === 'profile') {
+          renderProfileView();
+          document.getElementById('profile-view').classList.add('open');
+        }
       }
     }
 
