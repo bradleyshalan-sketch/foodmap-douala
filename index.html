@@ -5013,18 +5013,21 @@ Règles:
 
       // Elements that should only show on the 'Explorer/Map' page
       const exploreEls = ['hero-banner', 'controls-bar', 'main-area'];
+      const pfb = document.getElementById('places-fetch-bar');
 
       if (t === 'map') {
         exploreEls.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.style.display = '';
         });
+        if (pfb) pfb.style.display = '';
         if (map) setTimeout(() => map.invalidateSize(), 50);
       } else {
         exploreEls.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.style.display = 'none';
         });
+        if (pfb) pfb.style.display = 'none';
 
         if (t === 'saved') {
           renderSavedView();
@@ -5040,6 +5043,16 @@ Règles:
       document.getElementById(t + '-view').classList.remove('open');
       document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
       document.getElementById('nb-map').classList.add('active');
+
+      // Restore explore components
+      const exploreEls = ['hero-banner', 'controls-bar', 'main-area'];
+      exploreEls.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+      });
+      const pfb = document.getElementById('places-fetch-bar');
+      if (pfb) pfb.style.display = '';
+      if (map) setTimeout(() => map.invalidateSize(), 50);
     }
 
     // ── SAVED VIEW ────────────────────────────────────────────────────────────
