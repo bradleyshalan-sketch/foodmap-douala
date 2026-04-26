@@ -3107,21 +3107,11 @@
 
       <!-- Map section (collapsible) -->
       <div id="map-section">
-        <div id="map-provider-toggle">
-          <button class="mpt-btn active" id="mpt-leaflet" onclick="setMapProvider('google')">🗺 Google Maps</button>
-          <button class="mpt-btn" id="mpt-google" onclick="fetchNearbyPlaces()">✦ Trouver + restaurants</button>
-        </div>
         <div id="map"></div>
         <!-- Places loading overlay -->
         <div id="places-loading">
           <div class="pl-spin"></div>
           <div class="pl-text">Recherche de restaurants à Douala…</div>
-        </div>
-        <!-- Places fetch banner (shown after map loads) -->
-        <div id="places-fetch-bar" class="hidden">
-          <div class="pfb-dot"></div>
-          <span>Enrichir avec Google Places</span>
-          <button onclick="fetchNearbyPlaces()">Rechercher maintenant</button>
         </div>
       </div>
 
@@ -3590,7 +3580,7 @@
           class="nl">Explorer</span></button>
       <button class="nb" id="nb-saved" onclick="navTo('saved')"><span class="ni">❤️</span><span
           class="nl">Sauvés</span></button>
-      <button class="nb" id="nb-add" onclick="openAdd()"><span class="ni">➕</span><span
+      <button class="nb" id="nb-add" onclick="navTo('add')"><span class="ni">➕</span><span
           class="nl">Ajouter</span></button>
       <button class="nb" id="nb-profile" onclick="navTo('profile')"><span class="ni">👤</span><span
           class="nl">Profil</span></button>
@@ -4342,11 +4332,6 @@
         showSheet('gone');
         renderList();
         setTimeout(() => { if (map) map.invalidateSize(); }, 420);
-        // Show Places fetch banner
-        setTimeout(() => {
-          const bar = document.getElementById('places-fetch-bar');
-          if (bar) bar.classList.remove('hidden');
-        }, 1800);
         setTimeout(initGoogleSignIn, 800);
       }, 1000);
 
@@ -5010,24 +4995,21 @@ Règles:
       // Hide all full-screen views first
       document.getElementById('saved-view').classList.remove('open');
       document.getElementById('profile-view').classList.remove('open');
+      document.getElementById('add-view').classList.remove('open');
 
-      // Elements that should only show on the 'Explorer/Map' page
       const exploreEls = ['hero-banner', 'controls-bar', 'main-area'];
-      const pfb = document.getElementById('places-fetch-bar');
 
       if (t === 'map') {
         exploreEls.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.style.display = '';
         });
-        if (pfb) pfb.style.display = '';
         if (map) setTimeout(() => map.invalidateSize(), 50);
       } else {
         exploreEls.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.style.display = 'none';
         });
-        if (pfb) pfb.style.display = 'none';
 
         if (t === 'saved') {
           renderSavedView();
@@ -5035,6 +5017,8 @@ Règles:
         } else if (t === 'profile') {
           renderProfileView();
           document.getElementById('profile-view').classList.add('open');
+        } else if (t === 'add') {
+          document.getElementById('add-view').classList.add('open');
         }
       }
     }
@@ -5050,8 +5034,6 @@ Règles:
         const el = document.getElementById(id);
         if (el) el.style.display = '';
       });
-      const pfb = document.getElementById('places-fetch-bar');
-      if (pfb) pfb.style.display = '';
       if (map) setTimeout(() => map.invalidateSize(), 50);
     }
 
